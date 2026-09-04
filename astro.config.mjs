@@ -6,6 +6,6 @@ import { defineConfig } from 'astro/config';
 // once we push this for real, and revisit if/when a custom domain is
 // attached (base goes back to '/', site becomes the custom domain).
 export default defineConfig({
-  site: 'https://USERNAME.github.io',
-  base: '/REPO_NAME',
+  site: 'https://PrinceTut.github.io',
+  base: '/pivot-log',
 });
