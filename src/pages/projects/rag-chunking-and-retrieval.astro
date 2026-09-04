@@ -1,0 +1,787 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import StatStrip from '../../components/StatStrip.astro';
+import Abstract from '../../components/Abstract.astro';
+import Matrix from '../../components/Matrix.astro';
+import DivergingBar from '../../components/DivergingBar.astro';
+import ReformulationCallout from '../../components/ReformulationCallout.astro';
+import MetricCards from '../../components/MetricCards.astro';
+import type { ResearchMeta } from '../../types';
+import type { MatrixRow } from '../../components/Matrix.astro';
+
+export const meta: ResearchMeta = {
+  title: 'Understanding how RAG techniques behave',
+  dek: 'I used Six ways to cut a document, four ways to search it, and 253 questions to find out how chunking and retrieval systems behave, and what are some best use cases.',
+  date: '2026-09-04',
+  slug: 'rag-chunking-and-retrieval',
+  stats: [
+    { value: '20', label: 'legal contracts' },
+    { value: '253', label: 'hand-checked questions' },
+    { value: '6 × 4', label: 'chunk × retrieval grid' },
+    { value: '0.9407', label: 'best score achieved' },
+  ],
+};
+
+const columns = ['+ Hybrid', '+ Reranker', '+ Query Exp.', '+ Self-Reflect.'];
+
+const matrixRows: MatrixRow[] = [
+  {
+    label: 'Baseline',
+    plainScore: '0.9170',
+    cells: [
+      { value: 1.58, note: 'Keyword matching fused with vector search. A modest, consistent lift, exact-term matching helps most on definitional and exact-phrase questions where pure embeddings blur similar-but-wrong clauses.' },
+      { value: 2.37, note: 'The best score in the whole project (0.9407). A cross-encoder re-scores the top candidates jointly with the question. Recall barely moved; hit@1 jumped, what we saw was that the right chunk was already being found, just not ranked first.' },
+      { value: -1.98, note: 'The first negative result. An LLM reworded the question into more formal prose that drifted away from the contract\u2019s own wording, and the similarity search followed it off course.' },
+      { value: -0.79, note: 'A smaller regression than query expansion, because it only rewrites when it judges the first try insufficient, but when it does rewrite, it tends to strip questions into keyword fragments.' },
+    ],
+  },
+  {
+    label: 'Structure-aware A',
+    plainScore: '0.9012',
+    cells: [
+      { value: 1.97, note: 'Positive, like every hybrid cell, keyword matching partially compensates for the continuous context this chunker gave up at section boundaries.' },
+      { value: 3.56, note: 'A large gain (+3.56). Reranking rescues more on a weaker chunker: there\u2019s more mis-ranked-but-retrieved content for it to reorder into place.' },
+      { value: -2.77, note: 'The largest query-expansion regression in the grid (\u22122.77), and one of three regressions that reached individual statistical significance.' },
+      { value: -2.77, note: 'Also \u22122.77, also individually significant. On this chunker both rewriting techniques did real, measurable damage.' },
+    ],
+  },
+  {
+    label: 'Structure-aware A\u00b3',
+    plainScore: '0.8972',
+    cells: [
+      { value: 1.98, note: 'Positive lift; A\u00b3 is the version where I\u2019d merged away the bare-heading fragments, so hybrid has cleaner candidates to fuse.' },
+      { value: 3.96, note: '+3.96, the second-largest reranker gain. Similar story: weaker base chunker, more room for reordering to help.' },
+      { value: -1.18, note: 'Negative, consistent with every query-expansion cell, though smaller here.' },
+      { value: -3.16, note: 'The largest self-reflective regression (\u22123.16), individually significant, its keyword-stripping did the most harm on this chunker.' },
+    ],
+  },
+  {
+    label: 'Hierarchical',
+    plainScore: '0.8854',
+    cells: [
+      { value: 2.37, note: 'Positive. Hybrid helps a chunker whose child sub-clauses otherwise dilute the top results.' },
+      { value: 4.74, note: '+4.74, the single largest reranker gain in the grid. Reranking is very good at re-sorting the parent/child mix into the right order.' },
+      { value: -1.58, note: 'Negative, in line with the rest of the query-expansion column.' },
+      { value: -1.58, note: 'Negative, rewriting hurts here too, though less than on the structure-aware chunkers.' },
+    ],
+  },
+  {
+    label: 'Contextual',
+    plainScore: '0.8814',
+    cells: [
+      { value: 5.14, note: '+5.14, the biggest single gain anywhere in the grid, and individually the most statistically significant result. Keyword matching directly counteracts the \u2018keyword bait\u2019 problem the contextual embeddings introduced.' },
+      { value: 4.35, note: 'A large gain (+4.35). The reranker looks at raw question-chunk relevance, cutting through the spurious shared-defined-term matches.' },
+      { value: -0.79, note: 'Negative, but the smallest query-expansion regression, the one place the technique nearly broke even.' },
+      { value: 0.40, note: 'The one positive rewriting cell in the whole grid (+0.40). Flagged as a genuine exception; the contextual sentences may partly offset what self-reflective\u2019s rewriting disrupts elsewhere.' },
+    ],
+  },
+];
+
+const rerankerBars = [
+  { label: 'Baseline', value: 2.37 },
+  { label: 'Structure-aware A', value: 3.56 },
+  { label: 'Structure-aware A\u00b3', value: 3.96 },
+  { label: 'Hierarchical', value: 4.74 },
+  { label: 'Contextual', value: 4.35 },
+];
+const hybridBars = [
+  { label: 'Baseline', value: 1.58 },
+  { label: 'Structure-aware A', value: 1.97 },
+  { label: 'Structure-aware A\u00b3', value: 1.98 },
+  { label: 'Hierarchical', value: 2.37 },
+  { label: 'Contextual', value: 5.14 },
+];
+const queryExpBars = [
+  { label: 'Baseline', value: -1.98 },
+  { label: 'Structure-aware A', value: -2.77 },
+  { label: 'Structure-aware A\u00b3', value: -1.18 },
+  { label: 'Hierarchical', value: -1.58 },
+  { label: 'Contextual', value: -0.79 },
+];
+const selfReflectBars = [
+  { label: 'Baseline', value: -0.79 },
+  { label: 'Structure-aware A', value: -2.77 },
+  { label: 'Structure-aware A\u00b3', value: -3.16 },
+  { label: 'Hierarchical', value: -1.58 },
+  { label: 'Contextual', value: 0.40 },
+];
+---
+
+<BaseLayout title={meta.title} description={meta.dek}>
+  <article class="piece">
+    <header class="piece-header">
+      <h1>{meta.title}</h1>
+      <p class="dek">
+        This is an independent exercise in building and breaking retrieval
+        systems on legal contracts. I used Six ways to cut a document, four
+        ways to search it, and 253 questions to find out how chunking and
+        retrieval systems behave, and what are some best use cases.
+      </p>
+      <p class="byline">Pivot Log &middot; Independent research</p>
+    </header>
+
+    <StatStrip stats={meta.stats} />
+
+    <Abstract>
+      This is an independent exercise in building a retrieval-augmented
+      generation (RAG) system from the ground up, I want to make clear that
+      this is not to benchmark a product, but to understand the mechanisms
+      that is a black box to most people. I started by building a full
+      evaluation harness over twenty structurally complex legal contracts,
+      with a frozen set of 253 hand-checked questions, then compared six
+      chunking strategies and four retrieval strategies in a controlled
+      grid where exactly one variable moves at a time. In the end, two
+      findings drive the piece. First, and in an interesting twist, the
+      simplest chunking method, fixed-size text with continuous overlap,
+      beat every more sophisticated alternative, because continuous
+      cross-boundary context turned out to matter more than clean
+      section-aware cuts. Second, and more cleanly: retrieval techniques
+      that reorder or combine what search already found reliably helped,
+      while techniques that let a language model rewrite the question
+      reliably hurt. I also traced each regression to a specific, nameable
+      mechanism by attempting to read the model's own output. The
+      best-performing technique of all, a cross-encoder reranker, was also
+      free.
+    </Abstract>
+
+    <section class="section" aria-labelledby="grid-heading">
+      <h2 id="grid-heading">The Results in a Grid</h2>
+      <p>
+        This is just a visual summary of the results I saw. Every row is a
+        way of cutting the documents; every column after the first is a way
+        of searching over them. The first column is plain retrieval, the
+        baseline each technique is measured against. Each cell shows that
+        combination's score and its change versus its own row's plain
+        retrieval, so every comparison holds the chunking fixed and moves
+        only the search.
+      </p>
+      <Matrix
+        caption="5 chunkers × 4 retrieval techniques. Each cell is the change in score versus that chunker's own plain retrieval. Select a cell for its note."
+        columns={columns}
+        rows={matrixRows}
+      />
+    </section>
+
+    <section class="section" aria-labelledby="s1-heading">
+      <h2 id="s1-heading">1. Why I built this</h2>
+      <p>
+        I want to first establish why I decided to build this. If you read
+        my SLM project (you should), I spent a considerable time coming up
+        with a chunking mechanism to use for my dataset. I went through
+        multiple iterations, and in the end I was still unsure why they
+        behaved so differently. To help better understand this I wanted to
+        run a project comparing various retrieval-augmented generation
+        designs and retrieval mechanisms works. The reason this is relevant
+        in a broader sense also is because RAG is the standard way to give
+        a language model access to documents; it wasn't trained on; you cut
+        the documents into pieces, store them, and at question time you
+        retrieve the pieces most likely to hold the answer and hand them to
+        the model. You see a lot of people using RAG systems with Langraph
+        to run their agents swarms, but if I wanted to do that better than
+        them, it is crucial I open the Blackbox on how these systems work.
+      </p>
+      <p>
+        So over a few weekends and some late nights, I built a full
+        evaluation harness from scratch: twenty real legal contracts, 253
+        questions I checked by hand, six different ways of cutting the
+        documents into retrievable pieces, and four different ways of
+        searching over them. What I had seen across numerous chunking
+        designs for projects at Bowrington was that a technique that looks
+        obviously smarter on paper could still lose, and so I wanted to
+        know the mechanism that made it better or worse.
+      </p>
+      <p>
+        I started with legal contracts because they're long, densely
+        cross-referenced, full of defined terms and structurally messy in a
+        way that makes different techniques pull apart. The corpus is a
+        twenty-contract subset of CUAD, an attorney-annotated legal
+        dataset; I had to prioritise variety of structure because
+        structural complexity is what makes technique differences visible
+        and because re-embedding twenty contracts many times stays
+        affordable compared to say five hundred- but once I get a sponsor
+        for my GPU runtime then I'll probably be chunking the whole Indian
+        penal code.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="s2-heading">
+      <h2 id="s2-heading">2. The Set Up</h2>
+      <p>
+        I knew right from the start that I needed to build and test each
+        component independently before combining them. If I built and ran
+        everything together, I wouldn't know what was responsible for the
+        results. Simply, the whole question depends on moving one variable
+        at a time. So I decided to build the pipeline as five separate
+        pieces, each swappable without touching the others. For anyone not
+        familiar, the rough pieces were: How a document gets cut
+        (chunking), how those pieces get turned into numbers a computer can
+        compare (embedding), where they're stored, how they get searched
+        (retrieval), and how of course I finally measure whether a search
+        was right.
+      </p>
+      <p>
+        This mechanism was definitely a gross over engineer for a solo
+        project like this. But it made things much easier down the line,
+        especially when I ran the sixteen-combination comparison, four
+        chunking methods against four retrieval methods. I had to write
+        almost no new code, because the retrievers were written to work
+        over any chunking table rather than being wired to a specific one.
+        This architecture also makes it easier to run multiple datasets
+        which I will eventually be doing, but decided to keep this exercise
+        for one dataset for simplicity. I may just update this down the
+        line with more robust results as a V2.
+      </p>
+      <p>
+        There were a also a lot of hardware decision that I had to consider
+        in this setup. Especially because embedding all this text needed a
+        real GPU, well anything more than an M1 Air with 8GB RAM. Also,
+        very annoyingly, Mac's chip couldn't do it without silently
+        corrupting the output vectors, a bug that took me a while to pin
+        down. So I pivoted and rented one on RunPod, hunting across a few
+        tiers (the lack of rentable cloud GPUs is something we have to
+        discuss) before landing on an RTX 4000 Ada, because it was cheap
+        enough where I could justify the cost. An addition to this was that
+        because cloud GPUs get wiped when you shut them down, I had to set
+        up a persistent network volume to house the environment and the
+        model cache once, so I didn't have to rebuild it every session.
+        Everything that I embedded got stored in a Neon Postgres database
+        with the pgvector extension, which is what lets you search by
+        meaning instead of exact words. And when I was trying out the more
+        sophisticated chunking methods I used Docling to detect a
+        contract's real section structure. Finally, every chunker, however
+        it was cut, got embedded with the same open-source Qwen 0.6B
+        embedding model. I quite enjoyed this architecture, especially the
+        pod and the persistent volume, in total it cost me 8.5$ (6$ for the
+        pod and 2.5$ dollars a month for the persistent volume).
+      </p>
+      <p>
+        Finally, to get the ball rolling I had to build an answer key I
+        could peg my results against; so I took 253 questions across all
+        twenty contracts, each tagged by a different kind of reasoning: a
+        direct fact, a definition, a specific number or date, or a
+        comparison that spans two different clauses.
+      </p>
+      <p>
+        The clean, and certainly the best way to build this is to read all
+        twenty contracts yourself and hand-verify every question against
+        the source. What I actually did was generate candidates with two
+        independent LLM passes and only keep questions where both passes
+        agreed, then reconcile disagreements against the contract text (at
+        least one manual screen). I made sure that every question was
+        written against the full, uncut contract text, never against a
+        chunk - this was just a small detail so our eval set wasn't biased
+        by a specific chunking mechanism.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="s4-heading">
+      <h2 id="s4-heading">4. Chunking: a pretty unlikely outcome</h2>
+      <p>
+        For those unfamiliar, chunking is just how you cut the document up;
+        it happens once, before any question gets asked, and it decides
+        what pieces even exist to be found later. I built six ways of
+        doing it and ran them all against the same embeddings, the same
+        storage, the same questions.
+      </p>
+      <p>
+        The first result genuinely surprised me. The simplest possible
+        method, slice the text into fixed ~500-character pieces, each
+        overlapping its neighbour by a little so no sentence gets cleanly
+        severed, beat every more sophisticated thing I built, including
+        the ones that respected the contract's actual section boundaries
+        (splitting them into headings, sub clauses etc.)
+      </p>
+
+      <table>
+        <caption>
+          Overall is document-level recall@5 — did a chunk from the right
+          contract land in the top five. Hit@1 is how often the top result
+          was right; MRR rewards ranking the right answer higher.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Chunking method</th>
+            <th scope="col" class="num">Overall</th>
+            <th scope="col" class="num">Hit@1</th>
+            <th scope="col" class="num">MRR</th>
+            <th scope="col" class="num">Real cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Fixed-size — baseline (500/50)</th>
+            <td class="num">0.9170</td><td class="num">0.7826</td><td class="num">0.8330</td><td class="num">$0</td>
+          </tr>
+          <tr>
+            <th scope="row">Structure-aware (A)</th>
+            <td class="num">0.9012</td><td class="num">0.7431</td><td class="num">0.8031</td><td class="num">$0</td>
+          </tr>
+          <tr>
+            <th scope="row">Structure-aware v2 (A²)</th>
+            <td class="num">0.8696</td><td class="num">0.7312</td><td class="num">0.7845</td><td class="num">$0</td>
+          </tr>
+          <tr>
+            <th scope="row">Structure-aware v3 (A³)</th>
+            <td class="num">0.8972</td><td class="num">0.7470</td><td class="num">0.8023</td><td class="num">$0</td>
+          </tr>
+          <tr>
+            <th scope="row">Hierarchical</th>
+            <td class="num">0.8854</td><td class="num">0.7470</td><td class="num">0.7989</td><td class="num">$0</td>
+          </tr>
+          <tr>
+            <th scope="row">Contextual</th>
+            <td class="num">0.8814</td><td class="num">0.7431</td><td class="num">0.7985</td><td class="num">$1.9987</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        When I first saw this, I instinctually assumed that there was a bug
+        somewhere. A fixed boundary chunking having better results than
+        structure aware chunking felt incredibly counterintuitive. So I
+        investigated this a bit more to find out why, and the answer turned
+        out to be a quirk of the corpus, not an error. In simple terms, the
+        structure-aware methods buy you clean, section-respecting cuts, but
+        they lose something the fixed-size method gets: continuous overlap
+        across every single boundary. In a fixed-size scheme, the end of
+        one chunk is always the start of the next, so context that
+        straddles a boundary is never lost. When you cut on section lines
+        instead, a clause that spans a section break can fall through the
+        crack. On these legal contracts, that loss cost more than the
+        boundary-respect gained.
+      </p>
+      <p>
+        First, I just used Docling of the shelf (version A), which didn't
+        do well, which seemed fine given that it was just an off the shelf
+        structure. So I then reinforced the structure detection with
+        hand-written rules to catch numbered headings the parser missed,
+        and it got worse, not better (that's the A² row, the lowest score
+        in the table). Again, because it was so counterintuitive, rather
+        than conclude "structure-aware chunking just doesn't work," I
+        pulled the actual short chunks out of storage and looked at them.
+        Of 269 chunks under a hundred characters, ninety-three were bare
+        headings with no body text at all, a chunk containing literally the
+        word FEES and nothing else. The rest were mostly real content
+        chopped too short. Fortunately this wasn't evidence that granular
+        chunking is inherently bad; it was a specific implementation gap,
+        the code had a safeguard for sections that were too long but no
+        mirror safeguard for sections too short.
+      </p>
+      <p>
+        So I then built one again, A³: merge a too-short fragment into its
+        neighbor, with one careful exception, only if it doesn't end in a
+        period, because a short chunk that ends in a period is probably a
+        real, complete, short clause, not a stray header. That single fix
+        recovered most of the regression. The question type that A² had
+        hurt worst, comparisons across two clauses, came almost all the way
+        back. But it still landed below the plain fixed-size baseline, and
+        I decided to not keep reiterating this into an "A⁴." Which again
+        doesn't mean to say that structure aware chunking is worse, but
+        what I did realise that the effort of setting those boundaries,
+        making sure I am catching edge cases and everything seems to be, in
+        this instance, negligible at best. Yes I could build a really
+        through structure aware system, with overlaps and everything, or I
+        could use the fixed boundaries as is. Highlighting again, not a
+        right or wrong exercise, a distinction on choice, effort and
+        reward.
+      </p>
+
+      <h3>The final 2 chunking mechanisms</h3>
+      <p>
+        <strong>Hierarchical</strong> chunking indexes each document at two
+        zoom levels at once, a whole section as a "parent" chunk, and its
+        sub-clauses as separately findable "children". The idea being a
+        broad question matches a parent and a narrow one matches a child.
+        When I traced which level actually produced each correct answer,
+        the children earned 9.1% of the search slots but only 5.1% of the
+        wins. They did of course pull their weight occasionally, but on
+        balance they diluted the limited top-five with weaker candidates
+        and cost more than they returned.
+      </p>
+      <p>
+        <strong>Contextual</strong> chunking was the only method that spent
+        real money, and it was by far the most interesting failure of the
+        six. The idea, from a well-known paper, is to have a language model
+        write a one-sentence summary of what each chunk is about and
+        prepend it before embedding, so the vector captures more than the
+        raw text. I priced two ways of doing this against each other,
+        picked the one that came out roughly ten times cheaper (~$0.00057
+        per chunk versus ~$0.0057), and ran it for a real $1.9987. It
+        measurably hurt retrieval. When I pulled the specific wrong
+        answers, the mechanism was clear on why the score was so low: the
+        model's generated context sentences kept naming salient defined
+        terms, like "Territory" - and "Territory" is a term that shows up
+        in dozens of unrelated contracts. So the injected context became
+        keyword bait, dragging up chunks from the wrong documents that
+        happened to share a common defined term. A more sophisticated
+        method actively created a new way to be wrong, pretty symbolic of
+        the direction we are heading in if you ask me.
+      </p>
+      <p>
+        The finding underneath all of this: on this corpus, continuous
+        overlap had a genuine, reproducible advantage, and most of the
+        "sophisticated" methods trade it away for structure. I confirmed
+        the baseline result reproduced exactly on a different machine, same
+        score, same specific questions missed. Not to claim that continues
+        overlap is the best mechanism but in numerous cases the most
+        complex or expensive solution, like the contextual chunking, could
+        actively be working against you.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="s5-heading">
+      <h2 id="s5-heading">5. Retrieval: reorder the results and you win</h2>
+      <p>
+        Retrieval is what happens every time a question comes in, how you
+        search over the pieces you've already got. This is where I also
+        saw the project's cleanest finding come out.
+      </p>
+      <p>
+        I built four ways to search on top of the same chunks.
+        <strong>Hybrid</strong> search combines classic keyword matching
+        (BM25 - it scores documents by exact term overlap, weighted so rare
+        words count more) with meaning-based vector search, and fuses the
+        two ranked lists. <strong>Reranking</strong> takes the top handful
+        of results from an ordinary search and re-scores them with a
+        second, slower, more careful model that looks at the question and
+        each chunk together. Then two techniques that use a language model
+        to rewrite the question itself: <strong>query expansion</strong>,
+        which always generates a few reworded versions of the question and
+        searches all of them, and <strong>self-reflective</strong>
+        retrieval, which searches once, asks a model whether the results
+        look sufficient, and only reformulates and re-searches if the
+        answer is no.
+      </p>
+      <p>
+        I saw a stark pattern which held almost across everything: the two
+        techniques that reorder or combine what search already found
+        reliably helped, and the two where a language model rewrote the
+        question reliably hurt. Worth pausing and saying again, don't
+        complicate your processes with LLMs when you don't need to.
+      </p>
+
+      <DivergingBar caption="Reranker — score change vs. plain retrieval, by chunker." items={rerankerBars} />
+      <DivergingBar caption="Hybrid — score change vs. plain retrieval, by chunker." items={hybridBars} />
+      <DivergingBar caption="Query expansion — score change vs. plain retrieval, by chunker." items={queryExpBars} />
+      <DivergingBar caption="Self-reflective — score change vs. plain retrieval, by chunker." items={selfReflectBars} />
+
+      <p>
+        The single best result in the whole project was reranking, since
+        the reranker is a small local model on the GPU, it's also free. But
+        the more interesting thing was the shape of its win:
+      </p>
+
+      <MetricCards
+        metrics={[
+          { value: '+2.4 pts', label: 'Recall@5 change', note: 'Essentially noise. The right chunk was already being found almost as often either way.' },
+          { value: '+7.1 pts', label: 'Hit@1 change', note: 'The right answer moved into the top slot far more often.' },
+        ]}
+      />
+
+      <p>
+        So what this split told me that something specific about where
+        retrieval was failing on this corpus: most of the time the right
+        chunk was being retrieved, it just wasn't being ranked first. So
+        what became apparent was that the failure was a ranking problem,
+        not a finding problem.
+      </p>
+
+      <h3>The 5*4 matrix run</h3>
+      <p>
+        After setting up the chunker and the retrievers independent
+        pieces, I ran the full grid, all four retrieval methods on top of
+        all five chunking methods, sixteen new combinations on top of the
+        four I'd already measured.
+      </p>
+
+      <table>
+        <caption>
+          Each cell is the change versus that same chunker's own plain
+          retrieval — so every row is a clean within-chunker comparison,
+          one variable moving. Bold cells: the single largest gain
+          (Contextual + Hybrid, +5.14) and the one positive self-reflective
+          outlier (Contextual + Self-Reflective, +0.40).
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Chunker (plain score)</th>
+            <th scope="col" class="num">+ Hybrid</th>
+            <th scope="col" class="num">+ Reranker</th>
+            <th scope="col" class="num">+ Query Exp.</th>
+            <th scope="col" class="num">+ Self-Reflect.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Baseline — 0.9170</th>
+            <td class="num">+1.58</td><td class="num"><strong>+2.37</strong></td><td class="num">−1.98</td><td class="num">−0.79</td>
+          </tr>
+          <tr>
+            <th scope="row">Structure-aware A — 0.9012</th>
+            <td class="num">+1.97</td><td class="num">+3.56</td><td class="num">−2.77</td><td class="num">−2.77</td>
+          </tr>
+          <tr>
+            <th scope="row">Structure-aware A³ — 0.8972</th>
+            <td class="num">+1.98</td><td class="num">+3.96</td><td class="num">−1.18</td><td class="num">−3.16</td>
+          </tr>
+          <tr>
+            <th scope="row">Hierarchical — 0.8854</th>
+            <td class="num">+2.37</td><td class="num">+4.74</td><td class="num">−1.58</td><td class="num">−1.58</td>
+          </tr>
+          <tr>
+            <th scope="row">Contextual — 0.8814</th>
+            <td class="num"><strong>+5.14</strong></td><td class="num">+4.35</td><td class="num">−0.79</td><td class="num"><strong>+0.40</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        Reranking and hybrid search are positive on all five chunkers, no
+        exceptions. Query expansion is negative on all five, no exceptions.
+        Self-reflective is negative on four of five, with one small
+        positive outlier (Contextual, +0.40). There's also a secondary
+        pattern worth naming: the gains from reranking and hybrid are
+        biggest on the weakest chunkers, the worse your cutting was, the
+        more a good search on top can rescue it, and the less headroom
+        there is when the chunking was already strong. Which strengthens
+        the case for having both these systems together, in case the
+        chunking strategy falls short somewhere. Reordering works with
+        candidates the system already surfaced, so at worst it does
+        nothing, while rewriting the question can walk the search away
+        from a good answer it would otherwise have found. Which raised the
+        next question, away, how, exactly?
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="s6-heading">
+      <h2 id="s6-heading">6. Understanding what the LLMs did to the questions</h2>
+      <p>
+        While the results and quantification of it made it easy and
+        digestible at a glance, I wanted to see exactly what the retrieved
+        chunks, specifically the misses looked like. So for every case
+        where a rewriting technique broke a question that plain search had
+        gotten right, I pulled the actual reformulated text the model
+        produced and read it. In summary of all the queries I went
+        through, two different failure modes showed up:
+      </p>
+      <p>
+        The always-on rewriter (query expansion) drifted. Its rewrites
+        were accurate, often better English, but they moved away from the
+        contract's own words.
+      </p>
+
+      <ReformulationCallout
+        label="Lexical drift · query expansion"
+        before="How do the two clause durations compare?"
+        after="how their respective terms and periods of applicability measure against one another"
+      />
+
+      <p>
+        Nothing wrong with that sentence. But "durations" was probably the
+        word sitting in the actual contract, and "periods of applicability"
+        is not, and a similarity search is sensitive to that kind of
+        surface phrasing. The model polished the question right past the
+        answer. This is what seems to be notated as lexical drift.
+      </p>
+      <p>
+        The adaptive one (self-reflective) did something stranger. When it
+        decided its first try was insufficient and rewrote, it sometimes
+        collapsed a whole natural-language question into a string of bare
+        keywords.
+      </p>
+
+      <ReformulationCallout
+        label="Keyword-stripping · self-reflective"
+        before="How many days' notice and cure period before termination for breach?"
+        after="termination material breach notice period cure days requirements"
+      />
+
+      <p>
+        Another reformulation literally included the word AND in the
+        middle, as if the model had reverted to an old Boolean
+        keyword-search instinct inside a system that was never built to
+        use one. A dense vector search wants a natural sentence; but it
+        somehow got a search-engine query from 2005. I'll be mindful here
+        and say that collapsing them into one "LLM rewriting is bad" line
+        would be fair, but the nuance of the way that LLMs interact with
+        query and adaptive expansion, means that there are certainly
+        workarounds (prompts) to make it more aligned.
+      </p>
+      <p>
+        There was a third, smaller anomaly I chased and then decided to
+        let go: one regression where the model judged its results
+        sufficient and didn't rewrite the question at all, yet the result
+        still differed from plain search at the very bottom of the
+        ranking. I traced it down to the code level, confirmed the two
+        search calls were genuinely identical, and concluded it was
+        certainly a near-tie at the rank-five boundary. Two chunks scoring
+        close enough that tiny run-to-run variation flipped which one
+        landed fifth.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="s7-heading">
+      <h2 id="s7-heading">7. Vetting my numbers</h2>
+      <p>
+        I now had a pile of promising deltas, and a lot of time poured in
+        verifying their missed outputs and drifts which was a real risk of
+        over-reading them. A two-point difference on 253 questions can
+        easily be noise. I started of with a rough rule in my head, treat
+        anything under about five points as a tie, but that's a heuristic,
+        and I wanted to know which findings were a bit more robust.
+      </p>
+      <p>
+        So I built a significance testing into the harness. The tool I
+        used here is the McNemar's test, which is designed for this: the
+        same 253 questions scored twice under two conditions, where all
+        that matters is the questions the two conditions disagreed on. I
+        implemented it in plain Python rather than pulling in a heavy
+        statistics library, partly to avoid another dependency, and partly
+        because I wanted to just understand the math of the scoring. So I
+        cross-checked my implementation against an established library on
+        a dozen cases before trusting it on real data.
+      </p>
+
+      <table>
+        <caption>Each pair tested with McNemar's exact test on the paired outcomes of all 253 questions.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Comparison</th>
+            <th scope="col">Direction</th>
+            <th scope="col">Individually significant?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Reranker, on 4 of 5 chunkers</th><td>improvement</td><td><strong>Yes</strong></td></tr>
+          <tr><th scope="row">Reranker, on the baseline chunker</th><td>improvement</td><td>No</td></tr>
+          <tr><th scope="row">Hybrid, on 4 of 5 chunkers</th><td>improvement</td><td>No</td></tr>
+          <tr><th scope="row">Hybrid, on the Contextual chunker</th><td>improvement</td><td><strong>Yes (strongest)</strong></td></tr>
+          <tr><th scope="row">Query exp. / self-reflective, on A &amp; A³</th><td>regression</td><td><strong>Yes (3 pairs)</strong></td></tr>
+          <tr><th scope="row">Query exp. / self-reflective, elsewhere</th><td>regression</td><td>No</td></tr>
+        </tbody>
+      </table>
+
+      <p>
+        The direction of every finding sort of held. But individual
+        statistical confidence was earned only on a subset. Reranking's
+        improvement stood up on its own on almost every chunker I tried it
+        against; hybrid search mostly didn't, on its own, even though it
+        pointed the right way everywhere. The honest version is that the
+        pattern is strong and the individual cells are mostly suggestive,
+        which is exactly what you'd expect from 253 questions and effect
+        sizes of a few points. Like I've said throughout, this exercise
+        and mechanism can be quite easily extrapolated and done much more
+        rigorously with the right infrastructure and time that extends
+        beyond weekends.
+      </p>
+      <p>
+        In the end I also confirmed the pipeline itself wasn't broken or
+        cheating, so I re-ran one already-measured combination through the
+        full production path, and it reproduced not just the same score
+        but the exact same set of missed questions.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="s8-heading">
+      <h2 id="s8-heading">8. What happens from here</h2>
+      <p>
+        What do I do with this? Learn. I think what should be clear that
+        the leaderboard is always going to be subjective to the documents,
+        way certain strategies are written, how much time you spend making
+        them robust etc. But what became clear was a working understanding
+        of why these systems behave the way they do; maybe that reordering
+        what you found is safe while rewriting what you asked is
+        dangerous, that retrieval failure here was usually a ranking
+        problem wearing a recall problem's disguise. There are a couple of
+        more advanced retrieval setups I deliberately left for a later
+        phase, and a few loose threads I've flagged.
+      </p>
+      <p>
+        The reason I think that this exercise or understanding these
+        processes is going to become much more necessary and relevant is
+        because a small nuance like this will compound very fast at an
+        enterprise level. Having probes to see how your database is being
+        digested, and how they are retrieved for a specific use case. That
+        if you want to build a new pipeline don't just throw an LLM at it
+        and expect to make more robust. For a cheap price the drift is
+        undeniable, and to avoid this problem brings into question whether
+        the cost is even worth it. As models become more capable building
+        the right architecture around it becomes an incumbent, and this is
+        the first step to that.
+      </p>
+      <p>
+        Personally, I understand the mechanism a great deal better than
+        when I started. Enough to explain not just what won, but why, and
+        why different systems do behave the way they do, and understanding
+        what would be fitting for a specific use case. Thank you for
+        reading.
+      </p>
+      <p class="credits">
+        Built solo over a series of weekends. Twenty CUAD contracts ·
+        Qwen3-0.6B embeddings · pgvector on Neon · RunPod CUDA · Docling ·
+        McNemar / Wilson significance testing.
+      </p>
+    </section>
+  </article>
+</BaseLayout>
+
+<style>
+  .piece {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: var(--space-8) var(--space-10);
+  }
+
+  .piece-header .dek {
+    font-size: var(--size-dek);
+    color: var(--ink-soft);
+    margin-top: var(--space-4);
+  }
+
+  .byline {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+    margin-top: var(--space-4);
+  }
+
+  .section {
+    margin-top: var(--space-16);
+  }
+
+  .section > h2 {
+    margin-bottom: var(--space-4);
+  }
+
+  .section h3 {
+    margin-top: var(--space-8);
+    margin-bottom: var(--space-3);
+  }
+
+  table {
+    margin: var(--space-6) 0;
+  }
+
+  .credits {
+    margin-top: var(--space-8);
+    padding-top: var(--space-4);
+    border-top: var(--border);
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 639px) {
+    .piece {
+      padding: var(--space-4);
+    }
+    .section {
+      margin-top: var(--space-12);
+    }
+    table {
+      display: block;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+</style>

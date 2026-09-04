@@ -1,0 +1,166 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { withBase } from '../utils/url';
+---
+
+<BaseLayout
+  title="Pivot Log"
+  description="Independent research and writing on how systems actually behave."
+>
+  <div class="home">
+    <section class="hero">
+      <h1>Keeping up with the Frontier</h1>
+      <p class="sub">Independent projects and write-ups breaking down the LLM space and its components.</p>
+      <a class="cta" href={withBase('/projects')}>Explore the projects &rarr;</a>
+    </section>
+
+    <section class="reveal-section" data-reveal>
+      <div class="reveal-visual placeholder-visual">Placeholder visual — panel 1</div>
+      <div class="reveal-copy">
+        <h2>Placeholder heading one</h2>
+        <p>Placeholder supporting text — this section will carry real content and a real visual once the piece it's drawn from exists.</p>
+      </div>
+    </section>
+
+    <section class="reveal-section reverse" data-reveal>
+      <div class="reveal-visual placeholder-visual">Placeholder visual — panel 2</div>
+      <div class="reveal-copy">
+        <h2>Placeholder heading two</h2>
+        <p>Placeholder supporting text — same treatment, mirrored layout, to be replaced with something dynamic and specific.</p>
+      </div>
+    </section>
+
+    <section class="reveal-section" data-reveal>
+      <div class="reveal-visual placeholder-visual">Placeholder visual — panel 3</div>
+      <div class="reveal-copy">
+        <h2>Placeholder heading three</h2>
+        <p>Placeholder supporting text — last panel before the fold, holding a spot for whatever comes next.</p>
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .home {
+    max-width: var(--content-width-wide);
+    margin: 0 auto;
+    padding: var(--space-8);
+  }
+
+  .hero {
+    padding: var(--space-24) 0 var(--space-16);
+    max-width: 46rem;
+  }
+
+  .hero h1 {
+    font-family: var(--font-sans);
+    font-size: 4rem;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-bottom: var(--space-6);
+  }
+
+  .sub {
+    font-family: var(--font-serif);
+    font-size: var(--size-dek);
+    color: var(--ink-soft);
+    margin-bottom: var(--space-8);
+  }
+
+  .cta {
+    display: inline-block;
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: var(--space-1);
+  }
+  .cta:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .reveal-section {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: var(--space-16);
+    align-items: center;
+    padding: var(--space-24) 0;
+    border-top: var(--border);
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  .reveal-section.reverse {
+    grid-template-columns: 1fr 1.1fr;
+  }
+  .reveal-section.reverse .reveal-visual {
+    order: 2;
+  }
+
+  .reveal-section.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal-section {
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-section {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .placeholder-visual {
+    aspect-ratio: 4 / 3;
+    background: var(--paper-2);
+    border: 1px dashed var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .reveal-copy h2 {
+    font-size: 1.75rem;
+    margin-bottom: var(--space-4);
+  }
+  .reveal-copy p {
+    font-family: var(--font-serif);
+    font-size: 1.0625rem;
+    color: var(--ink-soft);
+    max-width: 28rem;
+  }
+</style>
+
+<script>
+  // Minimal, scoped scroll-reveal — respects reduced-motion via the CSS
+  // media query above, which already neutralizes the transform/opacity
+  // when the user has that preference set.
+  const sections = document.querySelectorAll<HTMLElement>('[data-reveal]');
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.2 }
+  );
+  sections.forEach((section) => observer.observe(section));
+</script>

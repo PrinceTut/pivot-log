@@ -1,0 +1,110 @@
+---
+import type { ResearchStat } from '../types';
+import { withBase } from '../utils/url';
+
+interface Props {
+  href: string; // site-internal path, e.g. '/projects/my-slug' — base-prefixed here
+  title: string;
+  dek: string;
+  description?: string;
+  stats?: ResearchStat[];
+  linkLabel?: string; // defaults to "Read the paper" — override per section (e.g. "Read the note")
+}
+
+const { href, title, dek, description, stats, linkLabel = 'Read the paper' } = Astro.props;
+const link = withBase(href);
+---
+
+<article class="paper-entry">
+  <h3><a href={link}>{title}</a></h3>
+  <p class="dek">{dek}</p>
+  {description && <p class="description">{description}</p>}
+  {stats && stats.length > 0 && (
+    <div class="stats-row">
+      {stats.map((s) => (
+        <div class="stat-block">
+          <div class="stat-value">{s.value}</div>
+          <div class="stat-label">{s.label}</div>
+        </div>
+      ))}
+    </div>
+  )}
+  <a class="read-link" href={link}>{linkLabel} &rarr;</a>
+</article>
+
+<style>
+  .paper-entry {
+    padding: var(--space-16) 0;
+    border-bottom: var(--border);
+  }
+  .paper-entry:first-child {
+    padding-top: var(--space-8);
+  }
+
+  h3 {
+    font-family: var(--font-serif);
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 600;
+    font-size: 2rem;
+    margin-bottom: var(--space-4);
+  }
+  h3 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  h3 a:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .dek {
+    font-family: var(--font-sans);
+    font-size: 1.0625rem;
+    color: var(--ink-soft);
+    max-width: 44rem;
+    margin-bottom: var(--space-3);
+  }
+
+  .description {
+    font-family: var(--font-serif);
+    font-size: 1.0625rem;
+    color: var(--ink);
+    max-width: 44rem;
+    margin-bottom: var(--space-8);
+  }
+
+  .stats-row {
+    display: flex;
+    gap: var(--space-16);
+    margin-bottom: var(--space-8);
+  }
+  .stat-value {
+    font-family: var(--font-sans);
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+  .stat-label {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+    margin-top: var(--space-1);
+    max-width: 12rem;
+  }
+
+  .read-link {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .read-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+</style>

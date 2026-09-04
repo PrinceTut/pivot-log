@@ -1,0 +1,57 @@
+---
+import type { ResearchStat } from '../types';
+
+interface Props {
+  stats: ResearchStat[];
+}
+
+const { stats } = Astro.props;
+---
+
+<dl class="stat-strip">
+  {stats.map((stat) => (
+    <div class="stat">
+      <dt class="value">{stat.value}</dt>
+      <dd class="label">{stat.label}</dd>
+    </div>
+  ))}
+</dl>
+
+<style>
+  .stat-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+    margin: var(--space-8) 0;
+    padding: var(--space-6) 0;
+    border-top: var(--border);
+    border-bottom: var(--border);
+  }
+
+  .stat {
+    margin: 0;
+  }
+
+  .value {
+    font-family: var(--font-sans);
+    font-size: var(--size-stat);
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+
+  .label {
+    margin: var(--space-1) 0 0 0;
+    font-family: var(--font-sans);
+    font-size: var(--size-stat-label);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 639px) {
+    .stat-strip {
+      gap: var(--space-6);
+    }
+  }
+</style>

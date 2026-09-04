@@ -1,0 +1,84 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import IndexEntry from '../../components/IndexEntry.astro';
+import type { ResearchMeta } from '../../types';
+
+const modules = import.meta.glob<{ meta: ResearchMeta }>('./*.astro', {
+  eager: true,
+});
+
+const notes = Object.entries(modules)
+  .filter(([path]) => !path.endsWith('/index.astro'))
+  .map(([, mod]) => mod.meta)
+  .filter(Boolean)
+  .sort((a, b) => b.date.localeCompare(a.date));
+---
+
+<BaseLayout
+  title="Scratchnotes"
+  description="Shorter, faster notes on things worth writing down."
+>
+  <div class="notes-index">
+    <header>
+      <p class="kicker">Pivot Log Scratchnotes</p>
+      <h1>Scratchnotes</h1>
+      <p class="intro">
+        A place to write about things I find important and want to think
+        through properly. Just my thoughts on things I come across, people
+        I meet, and what I read and listen to.
+      </p>
+    </header>
+
+    <hr />
+
+    <div class="list">
+      {notes.map((note) => (
+        <IndexEntry
+          href={`/scratchnotes/${note.slug}`}
+          title={note.title}
+          dek={note.dek}
+          linkLabel="Read the note"
+        />
+      ))}
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .notes-index {
+    max-width: var(--content-width-wide);
+    margin: 0 auto;
+    padding: var(--space-8);
+  }
+
+  header {
+    margin-bottom: var(--space-12);
+    max-width: 42rem;
+  }
+
+  .kicker {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    margin-bottom: var(--space-4);
+  }
+
+  h1 {
+    font-size: 3rem;
+  }
+
+  .intro {
+    color: var(--ink-soft);
+    font-size: var(--size-dek);
+    margin-top: var(--space-4);
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--ink);
+    margin: 0;
+  }
+</style>

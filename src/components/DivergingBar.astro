@@ -1,0 +1,107 @@
+---
+interface BarItem {
+  label: string;
+  value: number;
+}
+
+interface Props {
+  caption: string;
+  items: BarItem[];
+  scaleMax?: number;
+}
+
+const { caption, items, scaleMax = 6 } = Astro.props;
+
+function widthPct(value: number) {
+  return Math.min((Math.abs(value) / scaleMax) * 50, 50);
+}
+---
+
+<figure class="diverging-bar">
+  {items.map((item) => (
+    <div class="row">
+      <span class="label">{item.label}</span>
+      <div class="track">
+        <div class="zero-line"></div>
+        <div
+          class={`bar ${item.value >= 0 ? 'positive' : 'negative'}`}
+          style={`width: ${widthPct(item.value)}%;`}
+        ></div>
+      </div>
+      <span class={`value ${item.value >= 0 ? 'positive' : 'negative'}`}>
+        {item.value > 0 ? '+' : ''}{item.value.toFixed(2)}
+      </span>
+    </div>
+  ))}
+  <figcaption>{caption}</figcaption>
+</figure>
+
+<style>
+  .diverging-bar {
+    max-width: var(--content-width-wide);
+    margin: var(--space-8) 0;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 11rem 1fr 4rem;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-1) 0;
+  }
+
+  .label {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .track {
+    position: relative;
+    height: 1rem;
+    background: var(--paper-2);
+  }
+
+  .zero-line {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--line);
+  }
+
+  .bar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+  }
+  .bar.positive {
+    left: 50%;
+    background: var(--positive);
+  }
+  .bar.negative {
+    right: 50%;
+    background: var(--negative);
+  }
+
+  .value {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    text-align: right;
+  }
+  .value.positive { color: var(--positive); }
+  .value.negative { color: var(--negative); }
+
+  @media (max-width: 639px) {
+    .row {
+      grid-template-columns: 8rem 1fr 3.5rem;
+    }
+    .label {
+      font-size: 0.8125rem;
+    }
+  }
+</style>

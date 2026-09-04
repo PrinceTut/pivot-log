@@ -1,0 +1,181 @@
+---
+export interface MatrixCell {
+  value: number;
+  note: string;
+}
+
+export interface MatrixRow {
+  label: string;
+  plainScore: string;
+  cells: MatrixCell[]; // must align 1:1 with `columns`
+}
+
+interface Props {
+  caption: string;
+  columns: string[];
+  rows: MatrixRow[];
+}
+
+const { caption, columns, rows } = Astro.props;
+
+// Minimal styling: no background fill, just a thin border indicating sign.
+// (Reversed from the earlier continuous-heat-scale approach — user found
+// the solid color fills too visually loud.)
+function cellStyle(value: number) {
+  if (value > 0) return 'border-bottom: 2px solid var(--positive);';
+  if (value < 0) return 'border-bottom: 2px solid var(--negative);';
+  return 'border-bottom: 2px solid var(--line);';
+}
+function formatValue(value: number) {
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value.toFixed(2)}`;
+}
+---
+
+<div class="matrix-wrap">
+  <div class="matrix-scroll">
+  <table class="matrix">
+    <caption>{caption}</caption>
+    <thead>
+      <tr>
+        <th scope="col"></th>
+        {columns.map((col) => <th scope="col">{col}</th>)}
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((row) => (
+        <tr>
+          <th scope="row">{row.label} &mdash; {row.plainScore}</th>
+          {row.cells.map((cell, ci) => (
+            <td>
+              <button
+                type="button"
+                class="matrix-cell"
+                style={cellStyle(cell.value)}
+                data-note={cell.note}
+                data-title={`${row.label} + ${columns[ci]}`}
+                data-value={formatValue(cell.value)}
+                aria-describedby="matrix-panel"
+              >
+                {formatValue(cell.value)}
+              </button>
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  </div>
+
+  <div id="matrix-panel" class="matrix-panel" aria-live="polite">
+    <p class="hint">Select a cell to see the finding for that combination.</p>
+  </div>
+</div>
+
+<style>
+  .matrix-wrap {
+    max-width: var(--content-width-wide);
+    margin: var(--space-8) 0;
+  }
+
+  .matrix-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  .matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 0.9375rem;
+  }
+  .matrix caption {
+    font-family: var(--font-serif);
+  }
+  .matrix th,
+  .matrix td {
+    border: none;
+    padding: var(--space-1);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .matrix thead th {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--ink-soft);
+    padding-bottom: var(--space-2);
+  }
+  .matrix tbody th {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    text-align: left;
+    color: var(--ink-soft);
+    padding-right: var(--space-4);
+    white-space: nowrap;
+  }
+
+  .matrix-cell {
+    font-family: var(--font-mono);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ink);
+    border: none;
+    padding: var(--space-2) var(--space-3);
+    min-width: 4.5rem;
+    cursor: pointer;
+  }
+  .matrix-cell.active {
+    outline: 2px solid var(--ink);
+    outline-offset: -2px;
+  }
+
+  .matrix-panel {
+    margin-top: var(--space-4);
+    padding: var(--space-4);
+    background: var(--paper-2);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+  }
+  .matrix-panel .hint {
+    color: var(--ink-soft);
+    margin: 0;
+    font-style: italic;
+  }
+  .matrix-panel .panel-title {
+    font-weight: 600;
+    margin: 0 0 var(--space-2) 0;
+  }
+  .matrix-panel p {
+    margin: 0;
+  }
+
+  @media (max-width: 639px) {
+    .matrix-wrap {
+      margin: var(--space-6) calc(var(--space-4) * -1) var(--space-6);
+      padding: 0 var(--space-4);
+    }
+  }
+</style>
+
+<script>
+  // Progressive enhancement only — the notes are only reachable this way
+  // now (the always-visible appendix fallback was removed per request).
+  const cells = document.querySelectorAll<HTMLButtonElement>('.matrix-cell');
+  const panel = document.getElementById('matrix-panel');
+
+  cells.forEach((cell) => {
+    cell.addEventListener('click', () => {
+      cells.forEach((c) => c.classList.remove('active'));
+      cell.classList.add('active');
+      if (panel) {
+        panel.innerHTML = `
+          <p class="panel-title">${cell.dataset.title} (${cell.dataset.value})</p>
+          <p>${cell.dataset.note}</p>
+        `;
+      }
+    });
+  });
+</script>

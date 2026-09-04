@@ -1,0 +1,57 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { withBase } from '../../utils/url';
+import type { ResearchMeta } from '../../types';
+
+export const meta: ResearchMeta = {
+  title: 'GPT SOL 5.6 is basically Jarvis',
+  dek: 'Placeholder note — just here to show the visual treatment for Scratchnotes.',
+  date: '2026-09-04',
+  slug: 'gpt-sol-5-6-jarvis',
+  stats: [],
+};
+---
+
+<BaseLayout title={meta.title} description={meta.dek}>
+  <article class="note">
+    <a class="back" href={withBase('/scratchnotes')}>&larr; Scratchnotes</a>
+    <p class="date">Placeholder &middot; {meta.date}</p>
+    <h1>{meta.title}</h1>
+    <p class="placeholder-body">
+      This is placeholder text standing in for a real Scratchnote — a
+      shorter, faster, more casual write-up than a full Project, with no
+      custom components expected. Real content goes here once this is
+      actually written.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .note {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: var(--space-8) var(--space-10);
+  }
+  .back {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    text-decoration: none;
+    color: var(--ink-soft);
+  }
+  .date {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+    margin: var(--space-6) 0 var(--space-2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  h1 {
+    margin-bottom: var(--space-6);
+  }
+  .placeholder-body {
+    font-size: var(--size-body);
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+</style>
