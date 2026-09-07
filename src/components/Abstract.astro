@@ -2,7 +2,7 @@
 ---
 
 <section class="abstract" aria-label="Abstract">
-  <h3>Abstract</h3>
+  <h2>Abstract</h2>
   <p><slot /></p>
 </section>
 
@@ -10,7 +10,16 @@
   .abstract {
     margin: var(--space-8) 0;
   }
-  .abstract h3 {
+  .abstract h2 {
+    /* Visually matches the site's h3 label style (small, uppercase,
+       sans) — kept as an h2 tag so the page's heading levels go
+       h1 -> h2 -> h2 -> h2... without skipping a level. */
+    font-family: var(--font-sans);
+    font-size: var(--size-h3);
+    line-height: 1.4;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-weight: 600;
     margin-bottom: var(--space-3);
     color: var(--ink-soft);
   }

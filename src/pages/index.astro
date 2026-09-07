@@ -1,6 +1,29 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { withBase } from '../utils/url';
+import type { ResearchMeta } from '../types';
+
+// Real data — same self-updating glob mechanism as the /projects and
+// /scratchnotes index pages. Homepage teasers are never hand-written copy.
+const projectModules = import.meta.glob<{ meta: ResearchMeta }>('./projects/*.astro', {
+  eager: true,
+});
+const projects = Object.entries(projectModules)
+  .filter(([path]) => !path.endsWith('/index.astro'))
+  .map(([, mod]) => mod.meta)
+  .filter(Boolean)
+  .sort((a, b) => b.date.localeCompare(a.date))
+  .slice(0, 2);
+
+const noteModules = import.meta.glob<{ meta: ResearchMeta }>('./scratchnotes/*.astro', {
+  eager: true,
+});
+const notes = Object.entries(noteModules)
+  .filter(([path]) => !path.endsWith('/index.astro'))
+  .map(([, mod]) => mod.meta)
+  .filter(Boolean)
+  .sort((a, b) => b.date.localeCompare(a.date))
+  .slice(0, 1);
 ---
 
 <BaseLayout
@@ -14,61 +37,111 @@ import { withBase } from '../utils/url';
       <a class="cta" href={withBase('/projects')}>Explore the projects &rarr;</a>
     </section>
 
-    <section class="reveal-section" data-reveal>
-      <div class="reveal-visual placeholder-visual">Placeholder visual — panel 1</div>
-      <div class="reveal-copy">
-        <h2>Placeholder heading one</h2>
-        <p>Placeholder supporting text — this section will carry real content and a real visual once the piece it's drawn from exists.</p>
+    <section class="statement" id="statement-section">
+      <div class="statement-visual-wrap">
+        <div class="statement-visual placeholder-visual" id="scroll-visual">
+          3D scatter plot — placeholder<br />(scroll-linked, appears / fades with scroll)
+        </div>
+      </div>
+      <h2 class="statement-heading">A REPOSITORY OF ALL MY TECH PERSPECTIVES.</h2>
+      <div class="statement-list">
+        <div class="statement-row">
+          <span class="num">01</span>
+          <span class="statement-text placeholder-text">Placeholder — first perspective, TBD</span>
+        </div>
+        <div class="statement-row">
+          <span class="num">02</span>
+          <span class="statement-text placeholder-text">Placeholder — second perspective, TBD</span>
+        </div>
+        <div class="statement-row">
+          <span class="num">03</span>
+          <span class="statement-text placeholder-text">Placeholder — third perspective, TBD</span>
+        </div>
       </div>
     </section>
 
-    <section class="reveal-section reverse" data-reveal>
-      <div class="reveal-visual placeholder-visual">Placeholder visual — panel 2</div>
-      <div class="reveal-copy">
-        <h2>Placeholder heading two</h2>
-        <p>Placeholder supporting text — same treatment, mirrored layout, to be replaced with something dynamic and specific.</p>
+    <section class="teaser">
+      <p class="kicker">Projects</p>
+      <h2>My projects.</h2>
+      <p class="teaser-intro">
+        Exercises in building and breaking systems, to understand the
+        mechanisms behind models, pipelines, and agents.
+      </p>
+
+      <div class="teaser-list">
+        {projects.map((p, i) => (
+          <a class="teaser-row" href={withBase(`/projects/${p.slug}`)}>
+            <span class="row-num">{String(i + 1).padStart(2, '0')}</span>
+            <span class="row-body">
+              <span class="row-title">{p.title}</span>
+              <span class="row-dek">{p.dek}</span>
+            </span>
+            {p.stats && p.stats.length > 0 && (
+              <span class="row-stat">
+                <span class="row-stat-value">{p.stats[p.stats.length - 1].value}</span>
+                <span class="row-stat-label">{p.stats[p.stats.length - 1].label}</span>
+              </span>
+            )}
+          </a>
+        ))}
       </div>
+
+      <a class="cta" href={withBase('/projects')}>Explore the projects &rarr;</a>
     </section>
 
-    <section class="reveal-section" data-reveal>
-      <div class="reveal-visual placeholder-visual">Placeholder visual — panel 3</div>
-      <div class="reveal-copy">
-        <h2>Placeholder heading three</h2>
-        <p>Placeholder supporting text — last panel before the fold, holding a spot for whatever comes next.</p>
+    <section class="teaser">
+      <p class="kicker">Scratchnotes</p>
+      <h2>Scratchnotes.</h2>
+      <p class="teaser-intro">
+        A place to write about things I find important — faster and
+        looser than a full project.
+      </p>
+
+      <div class="notes-card-wrap">
+        {notes.map((n) => (
+          <a class="notes-card" href={withBase(`/scratchnotes/${n.slug}`)}>
+            <span class="notes-card-title">{n.title}</span>
+            <span class="notes-card-dek">{n.dek}</span>
+            <span class="notes-card-meta">{n.date} &middot; &rarr;</span>
+          </a>
+        ))}
       </div>
+
+      <a class="cta" href={withBase('/scratchnotes')}>Read Scratchnotes &rarr;</a>
     </section>
   </div>
 </BaseLayout>
 
 <style>
   .home {
-    max-width: var(--content-width-wide);
-    margin: 0 auto;
-    padding: var(--space-8);
+    width: 100%;
   }
 
+  /* --- Hero: centered, full-bleed padding --- */
   .hero {
-    padding: var(--space-24) 0 var(--space-16);
-    max-width: 46rem;
+    padding: var(--space-24) var(--space-16) var(--space-16);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
-
   .hero h1 {
     font-family: var(--font-sans);
-    font-size: 4rem;
+    font-size: 4.5rem;
     font-weight: 700;
     line-height: 1.05;
     letter-spacing: -0.01em;
     color: var(--ink);
+    max-width: 50rem;
     margin-bottom: var(--space-6);
   }
-
   .sub {
     font-family: var(--font-serif);
     font-size: var(--size-dek);
     color: var(--ink-soft);
+    max-width: 34rem;
     margin-bottom: var(--space-8);
   }
-
   .cta {
     display: inline-block;
     font-family: var(--font-sans);
@@ -86,81 +159,254 @@ import { withBase } from '../utils/url';
     border-color: var(--accent);
   }
 
-  .reveal-section {
-    display: grid;
-    grid-template-columns: 1.1fr 1fr;
-    gap: var(--space-16);
-    align-items: center;
-    padding: var(--space-24) 0;
+  /* --- Statement section: full-bleed, huge type, scroll-linked visual --- */
+  .statement {
+    padding: var(--space-24) var(--space-16);
     border-top: var(--border);
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  .reveal-section.reverse {
-    grid-template-columns: 1fr 1.1fr;
-  }
-  .reveal-section.reverse .reveal-visual {
-    order: 2;
   }
 
-  .reveal-section.is-visible {
-    opacity: 1;
-    transform: translateY(0);
+  .statement-visual-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: var(--space-16);
   }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .reveal-section {
-      transition: opacity 0.6s ease, transform 0.6s ease;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .reveal-section {
-      opacity: 1;
-      transform: none;
-    }
-  }
-
   .placeholder-visual {
-    aspect-ratio: 4 / 3;
+    width: 100%;
+    max-width: 40rem;
+    aspect-ratio: 16 / 7;
     background: var(--paper-2);
     border: 1px dashed var(--line);
     display: flex;
     align-items: center;
     justify-content: center;
+    text-align: center;
     font-family: var(--font-sans);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: var(--ink-soft);
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    line-height: 1.6;
+    opacity: 0;
+    transform: translateY(32px) scale(0.96);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .placeholder-visual {
+      opacity: 1;
+      transform: none;
+    }
   }
 
-  .reveal-copy h2 {
-    font-size: 1.75rem;
+  .statement-heading {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 4rem;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    max-width: 64rem;
+    margin: 0 0 var(--space-16) 0;
+  }
+
+  .statement-list {
+    max-width: 56rem;
+    border-top: var(--border);
+  }
+  .statement-row {
+    display: flex;
+    gap: var(--space-8);
+    padding: var(--space-6) 0;
+    border-bottom: var(--border);
+    align-items: baseline;
+  }
+  .statement-row .num {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+    min-width: 2rem;
+  }
+  .statement-text {
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+  }
+  .placeholder-text {
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  /* --- Teaser sections (Projects / Scratchnotes) --- */
+  .teaser {
+    padding: var(--space-24) var(--space-16);
+    border-top: var(--border);
+  }
+  .kicker {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    margin-bottom: var(--space-3);
+  }
+  .teaser h2 {
+    font-size: 3rem;
     margin-bottom: var(--space-4);
   }
-  .reveal-copy p {
+  .teaser-intro {
     font-family: var(--font-serif);
-    font-size: 1.0625rem;
+    font-size: var(--size-dek);
     color: var(--ink-soft);
-    max-width: 28rem;
+    max-width: 40rem;
+    margin-bottom: var(--space-12);
+  }
+
+  .teaser-list {
+    max-width: 64rem;
+    border-top: var(--border);
+    margin-bottom: var(--space-8);
+  }
+  .teaser-row {
+    display: grid;
+    grid-template-columns: 3rem 1fr auto;
+    gap: var(--space-8);
+    align-items: baseline;
+    padding: var(--space-8) 0;
+    border-bottom: var(--border);
+    text-decoration: none;
+    color: inherit;
+  }
+  .row-num {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+  }
+  .row-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .row-title {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 0.2em;
+  }
+  .teaser-row:hover .row-title {
+    text-decoration-color: var(--ink);
+  }
+  .row-dek {
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    color: var(--ink-soft);
+    max-width: 34rem;
+  }
+  .row-stat {
+    text-align: right;
+    white-space: nowrap;
+  }
+  .row-stat-value {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .row-stat-label {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    max-width: 10rem;
+  }
+
+  .notes-card-wrap {
+    max-width: 36rem;
+    margin-bottom: var(--space-8);
+  }
+  .notes-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-6) 0;
+    border-top: var(--border);
+    border-bottom: var(--border);
+    text-decoration: none;
+    color: inherit;
+  }
+  .notes-card-title {
+    font-family: var(--font-serif);
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .notes-card-dek {
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    color: var(--ink-soft);
+  }
+  .notes-card-meta {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 639px) {
+    .hero, .statement, .teaser {
+      padding-left: var(--space-4);
+      padding-right: var(--space-4);
+    }
+    .hero h1, .statement-heading {
+      font-size: 2.25rem;
+    }
+    .teaser-row {
+      grid-template-columns: 1fr;
+      gap: var(--space-2);
+    }
+    .row-stat {
+      text-align: left;
+    }
   }
 </style>
 
 <script>
-  // Minimal, scoped scroll-reveal — respects reduced-motion via the CSS
-  // media query above, which already neutralizes the transform/opacity
-  // when the user has that preference set.
-  const sections = document.querySelectorAll<HTMLElement>('[data-reveal]');
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.2 }
-  );
-  sections.forEach((section) => observer.observe(section));
+  // Scroll-linked (not trigger-once) progress animation for the statement
+  // section's placeholder visual: fades/scales in as the section enters
+  // the viewport, reverses back out as it leaves — matches "appears then
+  // disappears" rather than "fades in once and stays."
+  const visual = document.getElementById('scroll-visual');
+  const section = document.getElementById('statement-section');
+
+  if (visual && section && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    let ticking = false;
+
+    function updateProgress() {
+      const rect = section!.getBoundingClientRect();
+      const vh = window.innerHeight;
+
+      // Progress 0 -> 1 as the section's center crosses the viewport,
+      // 0 before it arrives, 1 at center, back to 0 after it passes.
+      const sectionCenter = rect.top + rect.height / 2;
+      const distanceFromViewportCenter = Math.abs(sectionCenter - vh / 2);
+      const range = vh * 0.9;
+      const progress = Math.max(0, 1 - distanceFromViewportCenter / range);
+
+      visual!.style.opacity = String(progress);
+      const scale = 0.96 + progress * 0.04;
+      const translateY = (1 - progress) * 32;
+      visual!.style.transform = `translateY(${translateY}px) scale(${scale})`;
+
+      ticking = false;
+    }
+
+    function onScroll() {
+      if (!ticking) {
+        requestAnimationFrame(updateProgress);
+        ticking = true;
+      }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    updateProgress();
+  }
 </script>

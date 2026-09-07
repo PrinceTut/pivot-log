@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import IndexEntry from '../../components/IndexEntry.astro';
+import { withBase } from '../../utils/url';
 import type { ResearchMeta } from '../../types';
 
 const modules = import.meta.glob<{ meta: ResearchMeta }>('./*.astro', {
@@ -21,24 +21,36 @@ const notes = Object.entries(modules)
   <div class="notes-index">
     <header>
       <p class="kicker">Pivot Log Scratchnotes</p>
-      <h1>Scratchnotes</h1>
+      <h1>Scratchnotes.</h1>
       <p class="intro">
-        A place to write about things I find important and want to think
-        through properly. Just my thoughts on things I come across, people
-        I meet, and what I read and listen to.
+        A place to write about things I find important — faster and
+        looser than a full project, no custom components, just notes.
       </p>
     </header>
 
+    <div class="section-header">
+      <h2>Posts</h2>
+      <span class="count">{notes.length} {notes.length === 1 ? 'post' : 'posts'}</span>
+    </div>
     <hr />
 
-    <div class="list">
+    <div class="card-grid">
       {notes.map((note) => (
-        <IndexEntry
-          href={`/scratchnotes/${note.slug}`}
-          title={note.title}
-          dek={note.dek}
-          linkLabel="Read the note"
-        />
+        <a class="note-card" href={withBase(`/scratchnotes/${note.slug}`)}>
+          {note.tags && note.tags.length > 0 && (
+            <div class="tags">
+              {note.tags.map((tag) => (
+                <span class="tag">{tag.toUpperCase()}</span>
+              ))}
+            </div>
+          )}
+          <h3>{note.title}</h3>
+          <p class="dek">{note.dek}</p>
+          <div class="meta-row">
+            <span class="meta-date">{note.date}</span>
+            <span class="meta-arrow" aria-hidden="true">&rarr;</span>
+          </div>
+        </a>
       ))}
     </div>
   </div>
@@ -46,9 +58,8 @@ const notes = Object.entries(modules)
 
 <style>
   .notes-index {
-    max-width: var(--content-width-wide);
-    margin: 0 auto;
-    padding: var(--space-8);
+    width: 100%;
+    padding: var(--space-16);
   }
 
   header {
@@ -67,7 +78,7 @@ const notes = Object.entries(modules)
   }
 
   h1 {
-    font-size: 3rem;
+    font-size: 3.5rem;
   }
 
   .intro {
@@ -76,9 +87,99 @@ const notes = Object.entries(modules)
     margin-top: var(--space-4);
   }
 
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+  }
+  .section-header h2 {
+    font-size: 1.75rem;
+  }
+  .count {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+  }
+
   hr {
     border: none;
     border-top: 1px solid var(--ink);
-    margin: 0;
+    margin: 0 0 var(--space-12) 0;
+  }
+
+  /* Note cards — a distinguishing bordered block (not the rounded,
+     shadowed, pill-tagged card from the koragraph reference), keeping
+     the site's square-corner, no-shadow, plain-text-tag language while
+     still setting Scratchnotes apart from the Projects list's flatter
+     rule-divided rows. */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: var(--space-6);
+    max-width: 64rem;
+  }
+
+  .note-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-6);
+    border: var(--border);
+    text-decoration: none;
+    color: inherit;
+  }
+  .note-card:hover {
+    border-color: var(--ink);
+  }
+
+  .tags {
+    display: flex;
+    gap: var(--space-3);
+  }
+  .tag {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+  }
+
+  .note-card h3 {
+    font-family: var(--font-serif);
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .dek {
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    color: var(--ink-soft);
+  }
+
+  .meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: var(--space-3);
+    border-top: var(--border);
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 639px) {
+    .notes-index {
+      padding: var(--space-4);
+    }
+    .card-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

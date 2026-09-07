@@ -10,4 +10,5 @@ export interface ResearchMeta {
   updatedDate?: string;
   stats: ResearchStat[];
   slug: string;
+  tags?: string[]; // optional — currently only used by Scratchnotes entries
 }

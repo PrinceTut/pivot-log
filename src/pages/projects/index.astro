@@ -12,6 +12,13 @@ const pieces = Object.entries(modules)
   .map(([, mod]) => mod.meta)
   .filter(Boolean)
   .sort((a, b) => b.date.localeCompare(a.date));
+
+// Longer descriptions, matched to a project's slug — the koragraph
+// reference pairs a short dek with a fuller paragraph beneath it.
+const descriptions: Record<string, string> = {
+  'rag-chunking-and-retrieval':
+    'An independent evaluation harness comparing six chunking strategies and four retrieval strategies over twenty structurally complex legal contracts, with every result traced back to its exact mechanism rather than left as a leaderboard number.',
+};
 ---
 
 <BaseLayout
@@ -21,11 +28,11 @@ const pieces = Object.entries(modules)
   <div class="projects-index">
     <header>
       <p class="kicker">Pivot Log Projects</p>
-      <h1>Projects</h1>
+      <h1>Projects.</h1>
       <p class="intro">
-        These are exercises I've done to build and break down systems, to
-        understand the mechanisms behind building models, pipelines, and
-        agents. Every piece here is something built out of curiosity.
+        Independent exercises in building and breaking systems, to understand
+        the mechanisms usually left as a black box. Every piece here is
+        something built and measured, not summarized secondhand.
       </p>
     </header>
 
@@ -41,6 +48,7 @@ const pieces = Object.entries(modules)
           href={`/projects/${piece.slug}`}
           title={piece.title}
           dek={piece.dek}
+          description={descriptions[piece.slug]}
           stats={piece.stats}
         />
       ))}
@@ -50,9 +58,8 @@ const pieces = Object.entries(modules)
 
 <style>
   .projects-index {
-    max-width: var(--content-width-wide);
-    margin: 0 auto;
-    padding: var(--space-8);
+    width: 100%;
+    padding: var(--space-16);
   }
 
   header {
@@ -71,7 +78,7 @@ const pieces = Object.entries(modules)
   }
 
   h1 {
-    font-size: 3rem;
+    font-size: 3.5rem;
   }
 
   .intro {
@@ -101,5 +108,11 @@ const pieces = Object.entries(modules)
     border: none;
     border-top: 1px solid var(--ink);
     margin: 0;
+  }
+
+  @media (max-width: 639px) {
+    .projects-index {
+      padding: var(--space-4);
+    }
   }
 </style>
