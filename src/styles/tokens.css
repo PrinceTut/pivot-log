@@ -43,6 +43,12 @@
   --content-width: 50rem;
   --content-width-wide: 62rem;
   --border: 1px solid var(--line);
+
+  /* Motion — two tiers, used everywhere instead of one-off durations.
+     "fast" for hover/interactive feedback (buttons, links, nav state).
+     "reveal" for content appearing/crossfading on scroll. */
+  --transition-fast: 0.15s ease;
+  --transition-reveal: 0.3s ease;
 }
 
 @media (max-width: 639px) {
@@ -98,7 +104,7 @@ button:focus-visible,
 /* Reduced motion — transitions only when the user hasn't asked to avoid them */
 @media (prefers-reduced-motion: no-preference) {
   a, .matrix-cell, .index-entry {
-    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+    transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
   }
 }
 

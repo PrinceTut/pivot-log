@@ -157,6 +157,11 @@ function formatValue(value: number) {
       margin: var(--space-6) calc(var(--space-4) * -1) var(--space-6);
       padding: 0 var(--space-4);
     }
+    .matrix-cell {
+      /* Comfortable touch target (~48px tall) — desktop keeps the more
+         compact sizing already reviewed, this is mobile-only. */
+      padding: var(--space-4) var(--space-3);
+    }
   }
 </style>
 

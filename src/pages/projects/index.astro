@@ -56,6 +56,38 @@ const descriptions: Record<string, string> = {
   </div>
 </BaseLayout>
 
+<script>
+  // Typographic/opacity differentiation as you scroll through the
+  // project list — the currently-centered entry stays at full opacity,
+  // the rest dim slightly. This is the agreed alternative to shifting
+  // background color per project (color stays reserved for data
+  // meaning elsewhere on the site). Same scroll-spy technique as the
+  // homepage's statement section (IntersectionObserver + a thin
+  // rootMargin band near viewport center) — reused deliberately rather
+  // than inventing a second mechanism for the same underlying need.
+  function setupProjectFocus() {
+    const entries = document.querySelectorAll<HTMLElement>('[data-scroll-entry]');
+    if (entries.length < 2) return; // nothing to differentiate with only one entry
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const observer = new IntersectionObserver(
+      (observerEntries) => {
+        observerEntries.forEach((observerEntry) => {
+          if (!observerEntry.isIntersecting) return;
+          entries.forEach((entry) => {
+            entry.classList.toggle('dimmed', entry !== observerEntry.target);
+          });
+        });
+      },
+      { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+    );
+
+    entries.forEach((entry) => observer.observe(entry));
+  }
+
+  document.addEventListener('astro:page-load', setupProjectFocus);
+</script>
+
 <style>
   .projects-index {
     width: 100%;
@@ -113,6 +145,9 @@ const descriptions: Record<string, string> = {
   @media (max-width: 639px) {
     .projects-index {
       padding: var(--space-4);
+    }
+    h1 {
+      font-size: 2.25rem;
     }
   }
 </style>

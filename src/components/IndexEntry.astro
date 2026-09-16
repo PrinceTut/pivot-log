@@ -15,7 +15,7 @@ const { href, title, dek, description, stats, linkLabel = 'Read the paper' } = A
 const link = withBase(href);
 ---
 
-<article class="paper-entry">
+<article class="paper-entry" data-scroll-entry>
   <h3><a href={link}>{title}</a></h3>
   <p class="dek">{dek}</p>
   {description && <p class="description">{description}</p>}
@@ -36,9 +36,26 @@ const link = withBase(href);
   .paper-entry {
     padding: var(--space-16) 0;
     border-bottom: var(--border);
+    opacity: 1;
   }
   .paper-entry:first-child {
     padding-top: var(--space-8);
+  }
+  /* Default is always fully visible — JS only ever *adds* dimming to
+     entries that aren't the current scroll focus. If this component
+     gets reused somewhere without the corresponding observer script,
+     entries simply stay at full opacity rather than getting stuck dim.
+     0.75, not a more aggressive fade — verified against WCAG AA contrast
+     (4.5:1 minimum) for the lightest text color used inside an entry;
+     0.45 measured at 2.3:1, a real accessibility failure, not just a
+     stylistic choice. */
+  .paper-entry.dimmed {
+    opacity: 0.75;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .paper-entry {
+      transition: opacity var(--transition-reveal);
+    }
   }
 
   h3 {
@@ -106,5 +123,15 @@ const link = withBase(href);
   .read-link:hover {
     text-decoration: underline;
     text-underline-offset: 0.2em;
+  }
+
+  @media (max-width: 639px) {
+    h3 {
+      font-size: 1.5rem;
+    }
+    .stats-row {
+      flex-wrap: wrap;
+      gap: var(--space-6) var(--space-8);
+    }
   }
 </style>

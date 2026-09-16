@@ -20,7 +20,6 @@ const notes = Object.entries(modules)
 >
   <div class="notes-index">
     <header>
-      <p class="kicker">Pivot Log Scratchnotes</p>
       <h1>Scratchnotes.</h1>
       <p class="intro">
         A place to write about things I find important — faster and
@@ -65,16 +64,6 @@ const notes = Object.entries(modules)
   header {
     margin-bottom: var(--space-12);
     max-width: 42rem;
-  }
-
-  .kicker {
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--ink-soft);
-    margin-bottom: var(--space-4);
   }
 
   h1 {
@@ -177,6 +166,9 @@ const notes = Object.entries(modules)
   @media (max-width: 639px) {
     .notes-index {
       padding: var(--space-4);
+    }
+    h1 {
+      font-size: 2.25rem;
     }
     .card-grid {
       grid-template-columns: 1fr;

@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { withBase } from '../utils/url';
+import Button from '../components/Button.astro';
 import type { ResearchMeta } from '../types';
 
 // Real data — same self-updating glob mechanism as the /projects and
@@ -34,28 +35,32 @@ const notes = Object.entries(noteModules)
     <section class="hero">
       <h1>Keeping up with the Frontier</h1>
       <p class="sub">Independent projects and write-ups breaking down the LLM space and its components.</p>
-      <a class="cta" href={withBase('/projects')}>Explore the projects &rarr;</a>
+      <Button href={withBase('/projects')}>Explore the projects</Button>
     </section>
 
     <section class="statement" id="statement-section">
-      <div class="statement-visual-wrap">
-        <div class="statement-visual placeholder-visual" id="scroll-visual">
-          3D scatter plot — placeholder<br />(scroll-linked, appears / fades with scroll)
-        </div>
-      </div>
       <h2 class="statement-heading">A REPOSITORY OF ALL MY TECH PERSPECTIVES.</h2>
-      <div class="statement-list">
-        <div class="statement-row">
-          <span class="num">01</span>
-          <span class="statement-text placeholder-text">Placeholder — first perspective, TBD</span>
+      <div class="statement-grid">
+        <div class="statement-list">
+          <div class="statement-row" data-row-index="0">
+            <span class="num">01</span>
+            <span class="statement-text placeholder-text">Placeholder — first perspective, TBD</span>
+          </div>
+          <div class="statement-row" data-row-index="1">
+            <span class="num">02</span>
+            <span class="statement-text placeholder-text">Placeholder — second perspective, TBD</span>
+          </div>
+          <div class="statement-row" data-row-index="2">
+            <span class="num">03</span>
+            <span class="statement-text placeholder-text">Placeholder — third perspective, TBD</span>
+          </div>
         </div>
-        <div class="statement-row">
-          <span class="num">02</span>
-          <span class="statement-text placeholder-text">Placeholder — second perspective, TBD</span>
-        </div>
-        <div class="statement-row">
-          <span class="num">03</span>
-          <span class="statement-text placeholder-text">Placeholder — third perspective, TBD</span>
+        <div class="statement-visual-pin">
+          <div class="placeholder-visual" id="scroll-visual">
+            <span class="visual-label active" data-visual-index="0">Perspective 01 — illustration placeholder<br />(real artwork goes here)</span>
+            <span class="visual-label" data-visual-index="1">Perspective 02 — illustration placeholder<br />(real artwork goes here)</span>
+            <span class="visual-label" data-visual-index="2">Perspective 03 — illustration placeholder<br />(real artwork goes here)</span>
+          </div>
         </div>
       </div>
     </section>
@@ -71,6 +76,7 @@ const notes = Object.entries(noteModules)
       <div class="teaser-list">
         {projects.map((p, i) => (
           <a class="teaser-row" href={withBase(`/projects/${p.slug}`)}>
+            <div class="row-visual" data-reveal>Illustration<br />placeholder</div>
             <span class="row-num">{String(i + 1).padStart(2, '0')}</span>
             <span class="row-body">
               <span class="row-title">{p.title}</span>
@@ -86,7 +92,7 @@ const notes = Object.entries(noteModules)
         ))}
       </div>
 
-      <a class="cta" href={withBase('/projects')}>Explore the projects &rarr;</a>
+      <Button href={withBase('/projects')}>Explore the projects</Button>
     </section>
 
     <section class="teaser">
@@ -107,7 +113,7 @@ const notes = Object.entries(noteModules)
         ))}
       </div>
 
-      <a class="cta" href={withBase('/scratchnotes')}>Read Scratchnotes &rarr;</a>
+      <Button href={withBase('/scratchnotes')}>Read Scratchnotes</Button>
     </section>
   </div>
 </BaseLayout>
@@ -142,22 +148,6 @@ const notes = Object.entries(noteModules)
     max-width: 34rem;
     margin-bottom: var(--space-8);
   }
-  .cta {
-    display: inline-block;
-    font-family: var(--font-sans);
-    font-size: 0.9375rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--ink);
-    text-decoration: none;
-    border-bottom: 2px solid var(--ink);
-    padding-bottom: var(--space-1);
-  }
-  .cta:hover {
-    color: var(--accent);
-    border-color: var(--accent);
-  }
 
   /* --- Statement section: full-bleed, huge type, scroll-linked visual --- */
   .statement {
@@ -165,57 +155,33 @@ const notes = Object.entries(noteModules)
     border-top: var(--border);
   }
 
-  .statement-visual-wrap {
-    display: flex;
-    justify-content: center;
-    margin-bottom: var(--space-16);
-  }
-  .placeholder-visual {
-    width: 100%;
-    max-width: 40rem;
-    aspect-ratio: 16 / 7;
-    background: var(--paper-2);
-    border: 1px dashed var(--line);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    color: var(--ink-soft);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    line-height: 1.6;
-    opacity: 0;
-    transform: translateY(32px) scale(0.96);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .placeholder-visual {
-      opacity: 1;
-      transform: none;
-    }
-  }
-
   .statement-heading {
     font-family: var(--font-sans);
     font-weight: 700;
-    font-size: 4rem;
-    line-height: 1.05;
+    font-size: 5.5rem;
+    line-height: 1.02;
     letter-spacing: -0.01em;
     max-width: 64rem;
     margin: 0 0 var(--space-16) 0;
   }
 
+  .statement-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: var(--space-16);
+    align-items: start;
+  }
+
   .statement-list {
-    max-width: 56rem;
     border-top: var(--border);
   }
   .statement-row {
     display: flex;
     gap: var(--space-8);
+    align-items: center;
+    min-height: 40vh;
     padding: var(--space-6) 0;
     border-bottom: var(--border);
-    align-items: baseline;
   }
   .statement-row .num {
     font-family: var(--font-mono);
@@ -230,6 +196,54 @@ const notes = Object.entries(noteModules)
   .placeholder-text {
     color: var(--ink-soft);
     font-style: italic;
+  }
+
+  .statement-visual-pin {
+    position: sticky;
+    top: 130px;
+  }
+  .placeholder-visual {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: var(--paper-2);
+    border: 1px dashed var(--line);
+  }
+  .visual-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: var(--space-6);
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.6;
+    opacity: 0;
+  }
+  .visual-label.active {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .visual-label {
+      transition: opacity var(--transition-reveal);
+    }
+  }
+
+  @media (max-width: 899px) {
+    .statement-grid {
+      grid-template-columns: 1fr;
+    }
+    .statement-visual-pin {
+      display: none;
+    }
+    .statement-row {
+      min-height: 0;
+    }
   }
 
   /* --- Teaser sections (Projects / Scratchnotes) --- */
@@ -247,7 +261,10 @@ const notes = Object.entries(noteModules)
     margin-bottom: var(--space-3);
   }
   .teaser h2 {
-    font-size: 3rem;
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-size: 3.5rem;
     margin-bottom: var(--space-4);
   }
   .teaser-intro {
@@ -265,13 +282,47 @@ const notes = Object.entries(noteModules)
   }
   .teaser-row {
     display: grid;
-    grid-template-columns: 3rem 1fr auto;
+    grid-template-columns: 6rem 3rem 1fr auto;
     gap: var(--space-8);
-    align-items: baseline;
+    align-items: center;
     padding: var(--space-8) 0;
     border-bottom: var(--border);
     text-decoration: none;
     color: inherit;
+  }
+  .row-visual {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: var(--paper-2);
+    border: 1px dashed var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: var(--font-sans);
+    font-size: 0.5625rem;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    line-height: 1.4;
+    padding: var(--space-1);
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  .row-visual.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .row-visual {
+      transition: opacity var(--transition-reveal), transform var(--transition-reveal);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .row-visual {
+      opacity: 1;
+      transform: none;
+    }
   }
   .row-num {
     font-family: var(--font-mono);
@@ -356,12 +407,15 @@ const notes = Object.entries(noteModules)
       padding-left: var(--space-4);
       padding-right: var(--space-4);
     }
-    .hero h1, .statement-heading {
+    .hero h1, .statement-heading, .teaser h2 {
       font-size: 2.25rem;
     }
     .teaser-row {
       grid-template-columns: 1fr;
       gap: var(--space-2);
+    }
+    .row-visual {
+      display: none;
     }
     .row-stat {
       text-align: left;
@@ -370,43 +424,60 @@ const notes = Object.entries(noteModules)
 </style>
 
 <script>
-  // Scroll-linked (not trigger-once) progress animation for the statement
-  // section's placeholder visual: fades/scales in as the section enters
-  // the viewport, reverses back out as it leaves — matches "appears then
-  // disappears" rather than "fades in once and stays."
-  const visual = document.getElementById('scroll-visual');
-  const section = document.getElementById('statement-section');
+  // The pinned visual panel's stick-while-scrolling behavior is handled
+  // natively by CSS `position: sticky` — no JS needed for that part.
+  // This script's only job is tracking which numbered row is currently
+  // near the vertical center of the viewport, and crossfading the
+  // matching placeholder label into view (real illustrations will swap
+  // in here once they exist, same mechanism).
+  function setupStatementScroll() {
+    const rows = document.querySelectorAll<HTMLElement>('.statement-row[data-row-index]');
+    const labels = document.querySelectorAll<HTMLElement>('.visual-label[data-visual-index]');
+    if (!rows.length || !labels.length) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-  if (visual && section && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    let ticking = false;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const index = entry.target.getAttribute('data-row-index');
+          labels.forEach((label) => {
+            label.classList.toggle('active', label.getAttribute('data-visual-index') === index);
+          });
+        });
+      },
+      { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+    );
 
-    function updateProgress() {
-      const rect = section!.getBoundingClientRect();
-      const vh = window.innerHeight;
-
-      // Progress 0 -> 1 as the section's center crosses the viewport,
-      // 0 before it arrives, 1 at center, back to 0 after it passes.
-      const sectionCenter = rect.top + rect.height / 2;
-      const distanceFromViewportCenter = Math.abs(sectionCenter - vh / 2);
-      const range = vh * 0.9;
-      const progress = Math.max(0, 1 - distanceFromViewportCenter / range);
-
-      visual!.style.opacity = String(progress);
-      const scale = 0.96 + progress * 0.04;
-      const translateY = (1 - progress) * 32;
-      visual!.style.transform = `translateY(${translateY}px) scale(${scale})`;
-
-      ticking = false;
-    }
-
-    function onScroll() {
-      if (!ticking) {
-        requestAnimationFrame(updateProgress);
-        ticking = true;
-      }
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    updateProgress();
+    rows.forEach((row) => observer.observe(row));
   }
+
+  document.addEventListener('astro:page-load', setupStatementScroll);
+
+  // Per-project illustration placeholders on the homepage teaser: a
+  // simple trigger-once fade-in as each row scrolls into view (not a
+  // continuous crossfade like the statement section above — these are
+  // independent list items, not one shared narrative panel, so each
+  // just needs to appear once and stay).
+  function setupProjectVisualReveal() {
+    const visuals = document.querySelectorAll<HTMLElement>('.row-visual[data-reveal]');
+    if (!visuals.length) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+
+    visuals.forEach((visual) => observer.observe(visual));
+  }
+
+  document.addEventListener('astro:page-load', setupProjectVisualReveal);
 </script>

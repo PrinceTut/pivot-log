@@ -1,0 +1,50 @@
+---
+interface Props {
+  href: string;
+  external?: boolean;
+}
+
+const { href, external = false } = Astro.props;
+---
+
+<a
+  class="btn"
+  href={href}
+  target={external ? '_blank' : undefined}
+  rel={external ? 'noopener noreferrer' : undefined}
+>
+  <span><slot /></span>
+  <svg class="btn-arrow" width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <path d="M2 8H13M13 8L9 4M13 8L9 12" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>
+</a>
+
+<style>
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    border: 1.5px solid var(--ink);
+    padding: var(--space-3) var(--space-6);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+    text-decoration: none;
+    background: transparent;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .btn {
+      transition: background-color var(--transition-fast), color var(--transition-fast);
+    }
+  }
+  .btn:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .btn-arrow {
+    flex-shrink: 0;
+  }
+</style>
