@@ -1,35 +1,103 @@
 ---
+import { withBase } from '../utils/url';
+
 const year = new Date().getFullYear();
+const REPO_URL = 'https://github.com/PrinceTut/pivot-log';
 ---
 
 <footer class="footer">
-  <div class="footer-inner">
-    <span class="footer-brand">Pivot Log</span>
-    <span class="footer-copy">&copy; {year}</span>
+  <div class="footer-top">
+    <p class="footer-word">Pivot Log</p>
+    <p class="footer-tagline">Independent research and writing on how systems actually behave.</p>
+    <p class="footer-specs">Built with Astro &middot; Statically generated &middot; Deployed via GitHub Actions</p>
+  </div>
+
+  <hr />
+
+  <div class="footer-bottom">
+    <nav class="footer-links">
+      <a href={withBase('/projects')}>Projects</a>
+      <a href={withBase('/scratchnotes')}>Scratchnotes</a>
+      <a href={REPO_URL} target="_blank" rel="noopener noreferrer">GitHub</a>
+    </nav>
+    <span class="footer-copy">&copy; {year} Pivot Log</span>
   </div>
 </footer>
 
 <style>
   .footer {
+    width: 100%;
     border-top: var(--border);
     margin-top: var(--space-24);
+    padding: var(--space-24) var(--space-16) var(--space-8);
   }
-  .footer-inner {
-    max-width: var(--content-width-wide);
-    margin: 0 auto;
-    padding: var(--space-12) var(--space-8);
+
+  .footer-top {
+    margin-bottom: var(--space-12);
+  }
+  .footer-word {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 2.5rem;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin: 0 0 var(--space-4) 0;
+  }
+  .footer-tagline {
+    font-family: var(--font-serif);
+    font-size: 1.0625rem;
+    color: var(--ink-soft);
+    max-width: 28rem;
+    margin: 0 0 var(--space-4) 0;
+  }
+  .footer-specs {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+
+  hr {
+    border: none;
+    border-top: var(--border);
+    margin: 0 0 var(--space-8) 0;
+  }
+
+  .footer-bottom {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-family: var(--font-sans);
+    flex-wrap: wrap;
+    gap: var(--space-4);
   }
-  .footer-brand {
-    font-size: 0.9375rem;
+  .footer-links {
+    display: flex;
+    gap: var(--space-6);
+  }
+  .footer-links a {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
     color: var(--ink-soft);
+    text-decoration: none;
+  }
+  .footer-links a:hover {
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
   }
   .footer-copy {
+    font-family: var(--font-sans);
     font-size: 0.8125rem;
     color: var(--ink-soft);
     letter-spacing: 0.02em;
+  }
+
+  @media (max-width: 639px) {
+    .footer {
+      padding: var(--space-16) var(--space-4) var(--space-6);
+    }
+    .footer-word {
+      font-size: 1.875rem;
+    }
   }
 </style>

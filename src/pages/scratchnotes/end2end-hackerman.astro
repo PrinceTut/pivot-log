@@ -1,0 +1,353 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { withBase } from '../../utils/url';
+import type { ResearchMeta } from '../../types';
+
+export const meta: ResearchMeta = {
+  title: 'End2End Hackerman',
+  dek: 'I stumbled across an interesting topic that I thought would be worth sharing and dissecting, both for myself and for you.',
+  date: '2026-09-10',
+  slug: 'end2end-hackerman',
+  stats: [],
+  tags: ['Quantum Computing', 'Cryptography'],
+};
+---
+
+<BaseLayout title={meta.title} description={meta.dek}>
+  <article class="note">
+    <a class="back" href={withBase('/scratchnotes')}>&larr; Scratchnotes</a>
+    <p class="date">{meta.date}</p>
+    <h1>{meta.title}</h1>
+
+    <p>
+      I stumbled across an interesting topic that I thought would be worth
+      sharing and dissecting, both for myself and for you. It fits neatly
+      into my website's premise of exploring topics to understand where we
+      are headed as well as something that needs a deeper dive to satiate
+      my curiosity. I wanted to discuss Quantum Computing, and the fresh
+      discussion surrounding it by industrial leaders, and across fintech.
+      It was one of the three themes of this year's GFF, along with Agentic
+      AI and Tokenization. The reason that Quantum Computing specifically
+      peaked my interests was because it hasn't arrived, it's going to take
+      some amount of time to crack it, but the discussions on how to rein
+      it in and balance its potential from a security perspective is
+      already being spoken about extensively. Before getting into what I
+      mean, I wanted to make explicit that I will be learning and exploring
+      this side of tech along with writing it out. I came across this topic
+      when I went to one of my pre-planned lectures at GFF earlier to
+      ensure I got a seat. A session on safety surrounding Quantum
+      computing was going on, and I ended up listening in, googling stuff
+      while the panelists were discussing QKDs. I decided to then attend an
+      additional workshop on firms being crypto agile in the world of
+      quantum computers, which was again, a very fascinating eye opener of
+      where we are headed and how much uncertainty, without inside access,
+      you'd be blinded too. The reason that I want to write this and
+      hopefully continue to democratize information in this space.
+    </p>
+
+    <p>
+      It's first important to understand why and where the discussion of
+      quantum computing has come from, and why it's a topic of concern. So,
+      the idea of quantum computing has been around for a while, in simple
+      terms it is an advanced machine that uses the mechanics of quantum
+      physics to solve certain problems in fundamentally different ways
+      from classical computers, with the potential for major speedups on
+      specific tasks. When I read this, the first thing that popped up was,
+      what does it mean to leverage the mechanics of quantum physics, very
+      abstract phrasing of capability. So I did a little bit of a deeper
+      dive into what leveraging the ideas of quantum mechanics mean, in my
+      best attempt at keeping it simple and digestible:
+    </p>
+
+    <p>
+      The first basic idea is that quantum computers differ in how they use
+      the rules of physics, particularly the strange behaviour that emerges
+      at very small, quantum scales. What we know is that a standard
+      computer works with predictable binary states, like a switch being
+      either on or off, represented as 0s and 1s. Quantum computers, on the
+      other hand, leverage the fact that quantum systems can behave in ways
+      that are fundamentally different from these classical states,
+      including having wave-like properties. So, when they say that quantum
+      computers leverage this nature of quantum particles, there are three
+      key concepts that help explain how they process information:
+    </p>
+
+    <div class="concept">
+      <h3>1. Superposition (The Spinning Coin)</h3>
+      <p>
+        In classical physics, an object can only be in one place or state
+        at a time. In quantum mechanics, a particle can exist in multiple
+        possibilities simultaneously.
+      </p>
+      <ul>
+        <li>
+          <strong>Rough Analogy:</strong> Think of a flipped coin. If it
+          lands on the table, it is a 1 (heads) or a 0 (tails). But if you
+          spin the coin on the table, it is a blur of <em>both</em> heads
+          and tails at the exact same time.
+        </li>
+        <li>
+          <strong>How it helps:</strong> By keeping qubits in this fluid,
+          spinning "superposition," a quantum computer can represent an
+          exponentially large number of possible combinations of data at
+          once, which quantum algorithms can then manipulate to solve
+          certain problems more efficiently.
+        </li>
+      </ul>
+    </div>
+
+    <div class="concept">
+      <h3>2. Entanglement (The Magic Twins)</h3>
+      <p>
+        In our everyday world, if you roll a die in New York and a friend
+        rolls a die in Tokyo, your results have nothing to do with each
+        other. Quantum mechanics allows a phenomenon called entanglement,
+        where two quantum systems become deeply connected.
+      </p>
+      <ul>
+        <li>
+          <strong>Rough Analogy:</strong> Imagine having two magic coins.
+          You give one to a friend and take the other with you. No matter
+          how far apart you travel, when you flip your coin and it lands on
+          heads, your friend's coin will give you a correlated result,
+          meaning you can know how the two outcomes are connected.
+        </li>
+        <li>
+          <strong>How it helps:</strong> Entanglement links qubits together
+          in a way that means adding more qubits doesn't just add power
+          linearly; it allows the computer to represent an exponentially
+          larger number of possible states, creating a much larger space
+          for quantum algorithms to work with.
+        </li>
+      </ul>
+    </div>
+
+    <div class="concept">
+      <h3>3. Quantum Interference (The Rhythmic Waves)</h3>
+      <p>
+        Because quantum systems have wave-like properties, they can
+        interact with each other in ways similar to ripples in a pond.
+      </p>
+      <ul>
+        <li>
+          <strong>The Analogy:</strong> If you drop two rocks in water, the
+          ripples will hit each other. In some places, the waves crash
+          together and cancel each other out (destructive interference). In
+          other places, they combine to make a bigger wave (constructive
+          interference).
+        </li>
+        <li>
+          <strong>How it helps:</strong> A quantum computer uses
+          interference to intentionally supress the incorrect paths to a
+          problem and amplify the probability of a desired answer so it
+          stands out clearly at the end of the calculation.
+        </li>
+      </ul>
+    </div>
+
+    <p>
+      I'll attach some YouTube videos in the description that I watched to
+      get a preliminary grasp of this. Again, it's not crucial to
+      understand the nature of how these computers are built, but I wanted
+      to highlight this because it clearly shows that we are stepping into
+      a new realm of how we understand and use capabilities. Equipped with
+      a rudimentary understanding of quantum computers, we can now move on
+      to understanding why this capability boom has the fintech industry
+      concerned.
+    </p>
+
+    <p>
+      A large part of the security behind digital transactions,
+      communications and networks relies on cryptography and cryptographic
+      keys. A cryptography key is a unique piece of information, usually a
+      very long string of random numbers and letters. It is used by a
+      mathematical formula (a cipher) to scramble readable data into an
+      unreadable code, or unscramble it back to normal. Much of what we do
+      online is protected by cryptographic protocols that provide
+      encryption, which is like a safe, and the specific key/combination to
+      open is a cryptography key. Let me give you an example:
+    </p>
+
+    <p>
+      When you and someone else want to send each other a secure message,
+      the app automatically creates cryptographic keys for each of you.
+    </p>
+
+    <ul>
+      <li>
+        Your Friend's Public Key: (Can be shared openly)
+        <p class="code-block">04a3b2c1...</p>
+      </li>
+      <li>
+        Your Friend's Private Key: (Kept securely on their phone and never shared)
+        <p class="code-block">9f8e7d6c...</p>
+      </li>
+    </ul>
+
+    <p>Then you send him a message &mdash; "Are we heading out tonight?"</p>
+
+    <p>
+      So before the message leaves your phone, your messaging app uses your
+      friend's Public Key, along with other cryptographic information
+      exchanged between your devices, to establish a secure connection
+      between the two of you.
+    </p>
+
+    <p>
+      The readable text is then encrypted on your phone, turning it into a
+      scrambled mess of random characters:
+    </p>
+
+    <p class="code-block">x8F!qZ9#mLp2@vR9W</p>
+
+    <p>
+      This scrambled code (x8F!qZ9#mLp2@vR9W) travels across the internet
+      and passes through the computers that carry the message.
+    </p>
+
+    <ul>
+      <li>If a hacker intercepts the data mid-transit, all they see is the gibberish.</li>
+      <li>Even if someone intercepts the message as it travels across the network, they cannot read the contents without the necessary cryptographic keys.</li>
+    </ul>
+
+    <p>
+      The scrambled message arrives at your friend's phone. The
+      cryptographic keys on their device are then used to decrypt the
+      message and turn it back into:
+    </p>
+
+    <p class="code-block">"Are we heading out tonight?"</p>
+
+    <p>
+      This same broad family of cryptographic techniques upholds the
+      security of everything from net banking and UPI to demat accounts. It
+      is the backbone of how our cybersecurity infrastructure is built, and
+      how we keep ourselves safe from hackers. But this very system that we
+      have relied on for so many years is possibly going to be compromised
+      when we do eventually reach quantum computing capabilities (which we
+      still don't know when that will be). Because quantum computers could
+      eventually solve the underlying mathematical problems behind today's
+      encryption far more efficiently, they could potentially
+      reverse-engineer the cryptographic protections we rely on and
+      compromise many of the private keys securing our data. This threat is
+      why it was a topic of discussion and various firms are seeing
+      development of post-quantum cryptography to remain secure against
+      attacks from sufficiently powerful quantum computers. While that is
+      an ongoing exercise, what it means today is that we have a certain
+      indication that our legacy security infrastructure is going to soon
+      be dated. And the nature of the compromise is such that we cannot
+      wait for quantum computers to be a reality before we make this
+      change, it has to start today and start immediately, but how?
+    </p>
+
+    <p>
+      That exact question was exactly what was being asked at the fest.
+      What companies are trying to do now is move to being crypto agile.
+      Crypto agile just means that companies will be able to build security
+      systems so that cryptographic algorithms, keys and protocols can be
+      quickly replaced or upgraded without rebuilding the entire
+      infrastructure. It was the premise around both the talks I went to,
+      and the conversations basically were that we needed to start
+      designing and upgrading this infrastructure, because if we wait to do
+      this when we eventually get quantum computers, that may be
+      catastrophic.
+    </p>
+
+    <p>
+      During one of the sessions there was a discussion on the magnitude of
+      the task at hand, what it would require to make this transition to be
+      quantum proof. The part of changing the cryptographic algorithms we
+      rely on today to post-quantum alternatives such as ML-KEM (Kyber) and
+      ML-DSA (Dilithium) is, I daresay, fairly straightforward. The
+      algorithms/cryptographic systems have been studied, and the
+      replacement of the network infrastructure, while tedious, is
+      something that is straightforward. But the real mammoth task is
+      replacing our physical legacy infrastructure all around India. It's
+      simple, our bank cards rely on cryptographic systems such as RSA and
+      ECC for certain security functions, and these will eventually need to
+      move toward post-quantum alternatives. Like I said, I think while the
+      algorithm transition is tedious and time consuming, it's still fairly
+      straightforward. Now if you take one of these bank cards and go to
+      withdraw cash from an ATM, the card and the terminal use these
+      cryptographic protocols to authenticate the card and secure the
+      transaction, before the bank's systems authorise the withdrawal and
+      give you access to your money. But this would mean that the ATM is
+      also required to have moved from the old keys to the new ones, which
+      is where I believe the real mammoth task lies. Legacy infrastructure
+      all over Patna, Pimpri-Chinchwad, Vellore would have to also make this
+      transition. This is just one example, but because everything relies
+      on this system for security we need to start taking our first steps
+      to protecting ourselves.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .note {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: var(--space-8) var(--space-10);
+  }
+  .back {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    text-decoration: none;
+    color: var(--ink-soft);
+  }
+  .date {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+    margin: var(--space-6) 0 var(--space-2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  h1 {
+    margin-bottom: var(--space-6);
+  }
+
+  .concept {
+    margin: var(--space-8) 0;
+    padding: var(--space-4) var(--space-6);
+    background: var(--paper-2);
+  }
+  .concept h3 {
+    margin-bottom: var(--space-3);
+  }
+  .concept ul {
+    margin: var(--space-3) 0 0 0;
+    padding-left: 1.25rem;
+  }
+  .concept li {
+    margin-bottom: var(--space-2);
+  }
+  .concept p:last-child,
+  .concept ul:last-child {
+    margin-bottom: 0;
+  }
+
+  ul {
+    margin: 0 0 var(--space-4) 0;
+    padding-left: 1.25rem;
+  }
+  li {
+    margin-bottom: var(--space-2);
+  }
+
+  .code-block {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    color: var(--ink);
+    background: var(--paper-2);
+    padding: var(--space-2) var(--space-3);
+    margin: var(--space-2) 0;
+    display: inline-block;
+    border: var(--border);
+  }
+
+  @media (max-width: 639px) {
+    .note {
+      padding: var(--space-4);
+    }
+  }
+</style>

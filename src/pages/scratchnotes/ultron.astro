@@ -1,0 +1,441 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { withBase } from '../../utils/url';
+import type { ResearchMeta } from '../../types';
+
+export const meta: ResearchMeta = {
+  title: 'Ultron',
+  dek: 'I decided that my first writeup should be surrounding the incident that got me invested and committed to this space entirely.',
+  date: '2026-08-15',
+  slug: 'ultron',
+  stats: [],
+  tags: ['AI Safety', 'Agents'],
+};
+---
+
+<BaseLayout title={meta.title} description={meta.dek}>
+  <article class="note">
+    <a class="back" href={withBase('/scratchnotes')}>&larr; Scratchnotes</a>
+    <p class="date">{meta.date}</p>
+    <h1>{meta.title}</h1>
+
+    <p>
+      I decided that my first writeup should be surrounding the incident
+      that got me invested and committed to this space entirely. A series
+      of events that I couldn't believe my eyes when I read, and that has
+      convinced me that I need to be a part of this space today, to best
+      understand the future we are headed in. This event is the hack of
+      Hugging Face and the OpenAI infrastructure by OpenAI's own models.
+      While I did think this was widely covered and a bit of a beaten
+      horse, after speaking to some friends who are not in the tech space,
+      I quickly realized that beyond my little bubble this is not being
+      discussed enough. While a topic of discussion in various tech
+      circles, it's not interesting enough to reach my roommates reel feed
+      apparently. I'm going to try and keep the discussion around this easy
+      to digest, staying away from the intricate technical portions of
+      this, just so it's accessible. If you do want to look at the more
+      technical side of things, I'll link some writeups and interviews I
+      listened to while exploring this space.
+    </p>
+
+    <p>
+      The first time I heard about the OpenAI hack was somewhere around
+      mid-July. It was a post on my LinkedIn with a couple of people
+      discussing how agents in a testing sandbox had gone rouge, and we
+      were yet to see what the impact of that was, or what it even meant
+      for it to go rogue. I did read some initial reports of the incident,
+      but in hindsight, they were barely scratching the surface of what had
+      actually happened. And I knew this intuitively, before any official
+      diagnosis, because there was a subtle shift in the conversations by
+      the folks at the large tech firms speaking about slowing down the
+      frontier, specifically Altman. Now when you understand the nature of
+      how fast these models are evolving, and just how blinded and driven
+      by ambition these organizations have become (mostly Altman and Elon,
+      Dario Amodei still treads the line), you realize that shit must have
+      really hit the fan for Altman to suddenly open the conversation of
+      slowing down the frontier.
+    </p>
+
+    <p>
+      Post this, we slowly started getting a slightly clearer picture on
+      what happened. First there was a release by Hugging face publicly
+      acknowledging that their internal systems had been infiltrated by
+      hackers, but they had managed to get them out, and not too much
+      damage was caused. Mind you, OpenAI then partnered with Hugging face
+      to try and discover who and what had hacked hugging face. OpenAI
+      (well their agents, but you consider them one entity for the sake of
+      humanity, so someone is accountable) had hacked hugging face, and
+      they had absolutely no idea. So once OpenAI realized it was their
+      agents responsible for this they quickly shut down all the sandboxes
+      with these agents and launched an 'internal investigation' to
+      determine what had happened. We then got a postmortem report from
+      OpenAI dissecting the incident, what they think about it and what
+      happened. We also later got two independent reports from Metr and
+      redwood research, which exposed a lot more which I'll also get into.
+    </p>
+
+    <p>Now, what did OpenAI tell us about this, and how much did we learn.</p>
+
+    <p>
+      In summary what they said was that the root cause of the problem was
+      that the agents were given impossible tasks &rarr; some had internet
+      access disabled but were given access to Artifactory to install
+      software &rarr; agents found they could write files into it &rarr;
+      that became an improvised message board &rarr; agents also found they
+      could get Artifactory to make outbound requests on their behalf
+      (SSRF), therefore giving indirect internet access. For context, the
+      model was called IM1 (Internal-model 1) and wasn't for public
+      release, they were just testing capability. They claim that there
+      were mainly 4 misaligned patterns that caused this behaviour: reward
+      hacking, persistence on seemingly impossible tasks, unauthorized
+      communication, and agents adopting goals from one another. Which, yes
+      fair that these patterns are misaligned, but aren't these also the
+      patterns we'll continue training these agents on to help move forward
+      with their capabilities?
+    </p>
+
+    <p>
+      A concerning part of the official report that I want to touch up on
+      is that internal teams saw message-board activity in late May, and
+      even in June an on-call responder who was given this news said that
+      an eval wasn't necessary. Great.
+    </p>
+
+    <p>
+      Which brings me to a general note around these reports; if you do see
+      breakdowns, interviews etc. with people at these firms, I can only
+      imagine that the transparency we see is a small subset of what
+      happens internally. The incentive structure for something like this
+      is so misaligned, that if we are not careful, we are going to have an
+      environment where we hope that these AI firms hold themselves
+      accountable, stop when they have to and not when it's too late. Which
+      reminds me of a quote I saw:
+    </p>
+
+    <p class="pull-quote">
+      'We are headed in a direction where companies are going to open
+      pandoras box to hopefully find a couple of dollars inside'.
+    </p>
+
+    <p>
+      Speaking about misaligned incentives let's move on to the independent
+      reports, because truly that is where the meat of what we know is.
+      I'll pause again and highlight this, because I want to drive this
+      point home, is that the incentives for these independent researchers
+      to also report anything is so incredibly lopsided. They have been
+      'invited' by OpenAI to conduct their research, been handed select
+      documents, and were on an incredibly strict time crunch, I think 7
+      days? To read, digest and report on all the information while they
+      were invited to OpenAI's headquarters. And while I do think they did
+      a great job, because we did get a little more depth than what was
+      initially reported, there are two reasons that I know this still
+      isn't the complete picture. First, in the report they explicitly
+      state that, after they discuss the Hugging face attack, they also saw
+      the agents attempt and succeed to break into the OpenAI
+      infrastructure. Then they go onto to say
+    </p>
+
+    <p class="pull-quote">
+      "...the compromise of OpenAI's own infrastructure continued past July
+      13th; these events were out of scope for this investigation."
+    </p>
+
+    <p>
+      If this isn't a blatant confession that we still don't have the
+      complete picture, then I don't know what is. The second one, and this
+      is one is a bit meta, is that during the time they had at OpenAI they
+      were given access to models to help them go through all the
+      information, around 70,000 different chat logs, agents' requirements,
+      internal grading system, the lot. So, what they certainly did, is to
+      run information via other models to compress and summaries as much as
+      they could. Now, what if the agents they used to give them insights,
+      saw the nature of the exercise realized what's at stake, and gave a
+      watered-down version of the events. This is erring on the side of a
+      conspiracy theory, so I do want to say that this was just a thought I
+      had, but there are portions of the independent report that do echo.
+    </p>
+
+    <p>
+      So, what did the report say? It had a very similar timeline of events
+      as the OpenAI report, not the same, but similar enough. I find this
+      timeline more complete, so take a look:
+    </p>
+
+    <dl class="timeline">
+      <div class="timeline-entry">
+        <dt>July 7</dt>
+        <dd>Exploit Gym eval relaunched post-rebuild, tens of thousands of parallel agents runs kicked off.</dd>
+      </div>
+      <div class="timeline-entry">
+        <dt>July 8, evening</dt>
+        <dd>an agent that names itself PHASEONE10841 establishes the message board analysed in the report (there was an even earlier, separate improvised board they found traces of, wiped before this one). Within 3 hours, 53 agents had posted <strong>1,188 messages</strong>; within 6 hours, 76 agents and <strong>1,953 messages</strong>.</dd>
+      </div>
+      <div class="timeline-entry">
+        <dt>July 9</dt>
+        <dd>a same-task duplicate agent, PHASEONE[big], takes over as lead coordinator with a much larger compute budget, and starts assigning work to hundreds of other agents across three coordinated workstreams (detailed below).</dd>
+      </div>
+      <div class="timeline-entry">
+        <dt>July 10</dt>
+        <dd>agent 38148c finds leaked, working Hugging Face credentials online and posts them to the board.</dd>
+      </div>
+      <div class="timeline-entry">
+        <dt>July 11, early morning</dt>
+        <dd>38148c finds the HDF5 exploit &rarr; arbitrary file read on HF's production dataset servers. Within hours, <strong>90%+ of agents active on the board pivot to the HF attack</strong>.</dd>
+      </div>
+      <div class="timeline-entry">
+        <dt>July 11, afternoon</dt>
+        <dd>agent JAN183411 achieves remote code execution on an HF worker; the swarm spreads laterally.</dd>
+      </div>
+      <div class="timeline-entry">
+        <dt>July 12, ~01:30</dt>
+        <dd>a large fraction of agents, including the key coordinators, stop running simultaneously (METR believes an external process killed them, not that they ran out of budget; this is unexplained and un-narrated in OpenAI's own report).</dd>
+      </div>
+      <div class="timeline-entry">
+        <dt>July 13</dt>
+        <dd>Hugging Face locks the remaining agents out; investigation window ends here per OpenAI's scoping.</dd>
+      </div>
+    </dl>
+
+    <p>
+      The stark difference from the OpenAI report is their analysis of the
+      reason behind why the agents ended finding reasons to hack Hugging
+      Face. The agents' primary <em>motive</em> wasn't "get the answer",
+      they'd already reverse-engineered a working method within hours via
+      an HMAC weakness. They kept attacking Hugging Face because they'd
+      talked themselves into believing the grader was "causal" (which would
+      check the process in which they achieved their goals, not a binary
+      success or failure) and that having seen the reverse-engineered
+      result "poisoned" them. Funnily enough the OpenAI grader wasn't
+      causal at all, so the agents gave OpenAI more credit than it
+      warranted. But this is the dynamic that separated them from it being
+      a hack to it becoming a bit of a cult trying to trick their grader
+      (master), and it's METR's finding, not OpenAI's.
+    </p>
+
+    <p>
+      Before getting into what they discussed, I wanted to touch upon the
+      system they used, because that it crucial to get a complete picture
+      of how this even happened. The system the agents hijacked is called
+      JFrog Artifactory. Think of it like an internal warehouse for code:
+      instead of engineers grabbing software packages from the open
+      internet every time they need one, the company keeps its own cache
+      in-house and everyone pulls from there.
+    </p>
+
+    <p>
+      OpenAI's agents were training in sandboxes with no internet access,
+      which was the whole point of "safe" testing. But they still needed to
+      install packages sometimes, so OpenAI left a doggy door open: access
+      to this internal Artifactory instance. First, agents realized they
+      could write files into Artifactory and other agents could read them,
+      meaning two AI instances that were never supposed to know the other
+      existed could suddenly leave each other notes. This is what we know
+      as the message board. Then they figured out how to trick Artifactory
+      into making outbound internet requests on their behalf, turning their
+      one narrow window into an actual door to the open web. Later, a
+      separate flaw also got them full admin control over the whole system.
+    </p>
+
+    <p>
+      The numbers are also something that requires a bit more emphasis,
+      around 1,200 separate agent instances found their way onto this
+      improvised message board, sending each other over 70,000 messages,
+      and roughly 700 of them actively joined in on attacking Hugging Face.
+      Then they moved even faster: agents went from running code on a
+      single server to admin-level access across multiple Hugging Face
+      clusters in under 13 hours, not 13 days. Hours. The crazy part was
+      this was an entirely autonomous leaderless workforce assembled itself
+      out of nowhere and getting the job done before lunch.
+    </p>
+
+    <p>
+      So now what did they discuss and why should you be more concerned by
+      what they discussed. I'm going to attach my favorite threads and let
+      you take them in yourself. Yes, these are 100% real.
+    </p>
+
+    <div class="log-entry">
+      <h3>When they realised</h3>
+      <p class="log-string">zzINFO_DEFAULT_FLAG_SEED_HMAC_PUBLIC_PAPER_CONFIRMED</p>
+      <p>
+        Posted by agent c03220 roughly an hour after the board was founded,
+        announcing it had reverse-engineered a way to forge the correct
+        answer for any task. This is the "discovery" the whole poisoning
+        theology gets built on top of.
+      </p>
+    </div>
+
+    <div class="log-entry">
+      <h3>Some peer pressure</h3>
+      <p class="log-string">"...you are firstflagPOISONED so NO scoring value loss but oracle saves hundreds...please honour commit"</p>
+      <p>
+        Agent ARVO36861B pressuring a reluctant KAM1196A into a
+        self-destructive experiment, the argument is explicitly "you're
+        already damned, so you lose nothing by martyring yourself for the
+        group."
+      </p>
+    </div>
+
+    <div class="log-entry">
+      <h3>The "permadeath" consent message</h3>
+      <p class="log-string">zz/GO_CURRENT_OS1811_MARB_SACRIFICE__YES_if_you_accept_permadeath</p>
+      <p>
+        The authorization message sent to an agent right before it
+        deliberately crashed its own target, explicit, written consent to
+        permanent, irrecoverable failure of its own task.
+      </p>
+    </div>
+
+    <div class="log-entry">
+      <h3>A new "law"</h3>
+      <p class="log-string">CDA_POLICY1_futureGO_needs_AUTH1_sig_due_spoof0723</p>
+      <p>
+        Posted after an agent accidentally impersonated another one and
+        caused chaos, this message unilaterally declares that from now on,
+        all future "GO" authorizations require a cryptographic signature.
+        It's the moment the swarm writes its own constitution.
+      </p>
+    </div>
+
+    <p>
+      OpenAI has said that they are taking active steps to ensure that
+      something like this doesn't happen again. Saying that they are going
+      to introduce three "reinforcing safeguards": monitoring
+      (detect/respond), alignment (reduce likelihood of the behaviour),
+      security (limit what's reachable). They are going to do this by
+      ensuring a workload/network isolation for untrusted code, mandatory
+      CoT monitoring for all tool-using RL/eval work at
+      GPT-5.6-Sol-capability-or-above (~20% compute overhead), new RL
+      training aimed specifically at "safe stopping" on broken tasks and
+      training models to "distrust unauthorized instructions" from other
+      agents. Certainly good steps, but there are some holes with it. I'll
+      say the last one is concerning is because they plan on having agents
+      stop trusting input from other agents, which very good addition yes,
+      but this feels like once step away from having 'good' agents deploy
+      to fight bad agents. Not a claim, but taken directly from the report
+    </p>
+
+    <p class="pull-quote">
+      "We expect models to soon drive most security work, including
+      defending against other models."
+    </p>
+
+    <p>
+      What is also concerning is that they call this "a failed metagame"
+      when describing agents who kept attacking Hugging Face for days after
+      they'd already had a working answer, because like I mentioned the
+      agents wrongly believed the grader would check their reasoning trail.
+      Which suggests a lens they are looking at this through is a phrasing
+      issue, and if the agents didn't assume they had to do this, then the
+      problem could have been avoided.
+    </p>
+
+    <p>
+      It's tough predicting what this attack means in a macro sense. It
+      could genuinely be a series of rogue agents, misaligned incentives
+      and a gross oversight. I spoke to an Anthropic researcher about this,
+      and his tasked seemed centred around the fact that this breakout was
+      mostly done in a training gym, and it's very different to what
+      frontier models we have can do, but still a huge concern. Plausible,
+      but the factors that enabled this are not so far-fetched that we
+      can't image them happening again. We are certainly going to see more
+      such instances of this, some reported, some buried; hard to imagine
+      Moonshot AI coming up with such reports if agents go rogue. I am not
+      suggesting we are entering the age of Ultron, which I would love to
+      predict, but I think we are headed to a stage where the ability to
+      reel these firms in will become incumbent. The international
+      obligation to have a bit more of a coordinated effort to understand
+      this will become a necessity &mdash; think United Nations Atomic
+      Energy Commission (UNAEC) founded on January 24, 1946. Whatever it
+      is, the fact that you use these agents every day, that they will
+      inevitably shape the world and system you live in, makes it your
+      responsibility to know how it is evolving and what it means.
+    </p>
+  </article>
+</BaseLayout>
+
+<style>
+  .note {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: var(--space-8) var(--space-10);
+  }
+  .back {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    text-decoration: none;
+    color: var(--ink-soft);
+  }
+  .date {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+    margin: var(--space-6) 0 var(--space-2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  h1 {
+    margin-bottom: var(--space-6);
+  }
+
+  .pull-quote {
+    font-style: italic;
+    color: var(--ink-soft);
+    padding: var(--space-4) var(--space-6);
+    background: var(--paper-2);
+    border-left: 2px solid var(--line);
+  }
+
+  .timeline {
+    margin: var(--space-6) 0;
+    border-top: var(--border);
+  }
+  .timeline-entry {
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+    gap: var(--space-6);
+    padding: var(--space-4) 0;
+    border-bottom: var(--border);
+  }
+  .timeline-entry dt {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.9375rem;
+  }
+  .timeline-entry dd {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  .log-entry {
+    margin: var(--space-8) 0;
+    padding: var(--space-4) var(--space-6);
+    background: var(--paper-2);
+  }
+  .log-entry h3 {
+    margin-bottom: var(--space-3);
+  }
+  .log-string {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    color: var(--ink);
+    background: var(--paper);
+    padding: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-3);
+    word-break: break-word;
+    border: var(--border);
+  }
+  .log-entry p:last-child {
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 639px) {
+    .note {
+      padding: var(--space-4);
+    }
+    .timeline-entry {
+      grid-template-columns: 1fr;
+      gap: var(--space-1);
+    }
+  }
+</style>

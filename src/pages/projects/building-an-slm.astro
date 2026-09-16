@@ -1,0 +1,518 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import StatStrip from '../../components/StatStrip.astro';
+import Abstract from '../../components/Abstract.astro';
+import type { ResearchMeta } from '../../types';
+
+export const meta: ResearchMeta = {
+  title: 'Building an SLM: A foot into building open source models',
+  dek: 'This is an independent exercise, written as a build log, in pairing a retrieval system with a fine-tuned small language model, and exploring how open source models are becoming more accessible.',
+  date: '2026-09-12',
+  slug: 'building-an-slm',
+  stats: [
+    { value: '24', label: 'documents' },
+    { value: '1,217', label: 'chunks' },
+    { value: '219', label: 'training examples' },
+    { value: '27/27', label: 'recall@5' },
+  ],
+};
+---
+
+<BaseLayout title={meta.title} description={meta.dek}>
+  <article class="piece">
+    <header class="piece-header">
+      <h1>{meta.title}</h1>
+      <p class="dek">{meta.dek}</p>
+      <p class="byline">Pivot Log &middot; Independent research</p>
+    </header>
+
+    <p class="intro-para">
+      I built a full RAG-plus-fine-tuned-SLM pipeline for India-Switzerland
+      cross-border tax questions. The basic idea was for the knowledge to
+      be in a curated database chunked and retrieved and the fine-tuned
+      model behaving according to my specific use case.
+    </p>
+
+    <StatStrip stats={meta.stats} />
+
+    <p class="spec-line">
+      24 documents &middot; 1,217 chunks &middot; 219 training examples &middot;
+      Qwen3-4B fine-tuned via LoRA (rank 16) &middot; 27/27 recall@5 &middot;
+      runs entirely on my own M1 Air &mdash; no GPU
+    </p>
+
+    <Abstract>
+      This is my first attempt at building an open source model. I set out to
+      build a RAG system for India-Switzerland cross-border tax and
+      wealth-structuring questions, with a small language model fine-tuned
+      layered on top to retrieve and format the output. The idea was to have
+      a usable model, with verification passes, and even multiple iterations
+      of training datasets to finalise the chunking system underneath.
+      Currently, the corpus sits at 24 documents and 1,217 chunks, retrieval
+      lands the right document in the top five on 27 of 27 labelled test
+      queries. The fine-tuned model, a Qwen3-4B, trained via LoRA on a free
+      Colab GPU, answers in a mandated five-part structure and also reasons
+      selectively. The single most heavily weighted behaviour of the SLM, is
+      that it declines honestly rather than making something up., which I
+      think is crucial for an exercise like this. All of this runs on my own
+      laptop, and serves as a good base to see what these models will soon be
+      capable off.
+    </Abstract>
+
+    <section class="section" aria-labelledby="s1-heading">
+      <h2 id="s1-heading">1. Why I built this</h2>
+      <p>
+        I built this because I was becoming increasingly aware of the
+        direction we were heading with respect to open source models, and
+        building and housing things locally. The acquisition of hugging
+        face, Kimi K3 being entirely open source with similar capabilities
+        of frontier models means that the accessibility to capable models is
+        only going to compound. A handful of enterprises have already made
+        this swap explicitly, a fine-tuned model a fraction of the size of a
+        general frontier model, running on infrastructure they control, and
+        doing one job incredibly well. Given this judgement call of where we
+        are heading I wanted to start working in the direction of building,
+        or even understanding these models myself.
+      </p>
+      <p>
+        I also knew I had to understand the dynamic between how models
+        behave in terms of just 'absolute' ability compared to being able to
+        get targeted results with the correct architecture around it. In
+        this case the correct architecture being RAG and retrieval layers,
+        and a fine tuned model. It's easy to be tempted to just throw more
+        data at the model, but simply put, training the model on information
+        isn't really the way to get it smarter, the correct approach is to
+        increase your database and then train your models behaviour
+        according to this increased laye. So in essence I wanted to build
+        this because I wanted an in-house reasoning tool, purpose built for
+        one narrow cross-border use case, which could come in handy when
+        data privacy laws become stricter or even some political
+        motivations, like holding back the shipping of frontier models.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="s2-heading">
+      <h2 id="s2-heading">2. Building the library</h2>
+      <p>
+        I started by building my corpus and the chunking mechanism for them,
+        in essence how powerful and capable the model was heavily dependent
+        on which documents I chose for my corpus and how they are chunked.
+        The corpus building portion actually took a considerable amount of
+        time, and a couple of iterations till I settled on this split:
+        <em>24 documents with 1,217 chunks, DTAA treaty text, the Income-tax
+        Act 2025, FEMA legislation and RBI Master Directions, Swiss
+        succession, foundation and anti-money-laundering law, Swiss tax
+        reference material, and case law, organised by jurisdiction</em>.
+        In the end I tried covering most of the important documents that
+        would be necessary for cross border transactions, and watering down
+        larger documents like the general Indian tax laws to its relevant
+        sections. Roughly two-thirds of the chunk volume was on the India
+        side, a fifth on the Switzerland side, and the rest bilateral or
+        treaty material.
+      </p>
+      <p>
+        One interesting choice that I had to make was to see how I could get
+        some of the biggest source documents into my corpus, such as a
+        536-section Income-tax Act, a 422-page Rules print-export, a
+        391-section Succession Act. Taken as it is, these would skew the
+        chunk count in their favour, and even have a substantial amount of
+        sections that wouldn't have been relevant, thus generally reducing
+        accuracy. So what I did was distil them down to the cross-border-relevant
+        subset before chunking them. While the corpus building was the
+        slowest and arguably the hardest part of the project, I think it
+        highlights the importance of piecing together a relevant and
+        targeted dataset. The manual effort of data work isn't going to
+        disappear, the ones that can do it the smartest will just be able to
+        get the most out of their model &mdash; the context layer.
+      </p>
+
+      <h3>Moving away from Corpus v1</h3>
+      <p>
+        As I mentioned, the final dataset I landed on, and the specific
+        chunking mechanism took a couple of rounds of iteration. I want to
+        walk through some problems with my v1, as that was certainly part of
+        the learning I had. The original chunker I built matched article
+        headings only at the very start of a line, but when I looked at a
+        few examples of the text, 'ARTICLE 13' began directly after Article
+        12's last sentence. Basically it printed sentence that list multiple
+        articles as its own chunk. Unfortunately my initial check and regex
+        never caught it. I initially thought I'd just remove the line-start
+        requirement entirely, and I thought that fixed it, ran this for like
+        2 days chunking everything locally. But It didn't.
+      </p>
+      <p>
+        So after a couple of rounds of reworking I landed on six
+        structure-detecting patterns. This is the rough split of the
+        chunking mechanisms for reference:
+      </p>
+      <ul>
+        <li>one for numbered treaty articles,</li>
+        <li>one for hand-compiled 'Art. 12'-style documents,</li>
+        <li>one for FAQ-formatted RBI circulars,</li>
+        <li>one for Indian legislative section numbering,</li>
+        <li>one for Part/Chapter headings,</li>
+        <li>one filename-scoped special case just for the Swiss Tax System's own decimal nesting.</li>
+      </ul>
+      <p>
+        Along with this a specific addition I made was to ensure that six
+        known tax-rate tables inside the Income-tax Act get pulled out and
+        protected before being chunked. This was because the internal
+        numbering was a bit of a mess. I labelled every chunk with its own
+        filename in its header, because section numbers overlapped but the
+        distinction of where they came from was crucial.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="s3-heading">
+      <h2 id="s3-heading">3. Retrieving said chunks</h2>
+      <p>
+        I initially built a first version which was vector-only; a pure
+        semantic search over the embeddings (BAAI's small English embedding
+        model). This broke quite fast because legal text was a little bit
+        more complex to run this on; anything depending on an exact term or
+        number rather than a general meaning fell short. So for my second
+        iteration I added BM25 keyword search alongside it and fused the two
+        ranked lists. This was much much better than the results I saw with
+        the old vector-only retriever, so the final retrieval system was a
+        vector search with BM25 layered on top of it.
+      </p>
+      <p>
+        One addition that I also used to make my retrieval smarter was to
+        have a jurisdiction-aware filtering on top of this. I built this in
+        a way that this was a hard filter, but also that it was paired with
+        safety net, so a bilateral questions (India and Switzerland both
+        relevant at once) never gets starved by an overtly rigid filter. I
+        also had a dedicated balanced_search() specifically protecting
+        cross-jurisdiction queries from one side's larger document volume
+        drowning out the other's smaller one, and a CrossEncoder reranking
+        pass on top of everything, re-scoring the handful of results that
+        make it through. The per source and per jurisdiction caps were
+        numbers that I eyeballed and felt comfortable with at that time, but
+        if you want a more sophisticated approach to this you can run
+        different iterations as an isolated exercise on the corpus before
+        layering it in.
+      </p>
+
+      <!-- Original note: "Here is a quick summary of the results of this –
+           (Present this more visually, less as text)" — author's own
+           production instruction, not reader-facing content, so kept out
+           of the rendered page but preserved here verbatim. -->
+      <p class="aside">
+        What the system actually does, checked against 27 <strong>labelled</strong>
+        queries &mdash; one for every document in the corpus, plus three
+        targeted checks against provisions I'd specifically flagged as
+        retrieval failures earlier in the project &mdash; is land the
+        correct source document somewhere in the top five, every single
+        time. 27 out of 27. The correct document sits in first place 26 out
+        of 27 times. Two of the three previously-flagged provisions (a
+        company-residency tie-breaker clause, a pensions article) now
+        retrieve cleanly. The third, a royalty-rate clause, retrieves &mdash;
+        but only at rank four, buried behind three chunks pulled from an
+        entirely different, much larger document that happens to share the
+        same treaty-adjacent vocabulary. That's not a semantic failure, it's
+        a volume one: that competing document alone accounts for 121 of the
+        corpus's 1,217 chunks, more than double the entire treaty document
+        it's crowding out. Worth being precise about what this metric
+        actually proves and doesn't: it confirms the right file made the
+        shortlist, not that the specific paragraph carrying the rate itself
+        was the exact chunk retrieved.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="s4-heading">
+      <h2 id="s4-heading">4. Teaching it to behave</h2>
+      <p>
+        Now we move on to the more fun part of the build, the fine tuning of
+        the model. Before I get into it I feel like it's worth being
+        explicit about what fine-tuning is doing here. A small language
+        model, the one I chose is about 4 billion parameters, comes out of
+        its own base training knowing the basics of English and general
+        reasoning. What it doesn't have, and what it's deliberately never
+        given, is the actual substance or knowledge of India-Switzerland tax
+        law. The fine-tune's whole job is to actually shape behaviour with
+        the outputs: so answer only from what's retrieved, structure every
+        answer into a fixed five-part shape, reason inside a &lt;think&gt;
+        block selectively rather than constantly or never. Additionally it
+        also learns (what is the single most heavily weighted thing in the
+        entire training set, at just under 22% of every example), it
+        declines when the retrieved context doesn't actually cover the
+        question. For this exercise the training example's grounding had to
+        come from a the retrieval calls, so that it understands it needs to
+        reason only with my RAG output.
+      </p>
+      <p>
+        The choice of Qwen3-4B specifically to do this was for a couple of
+        reasons. It ships with native &lt;think&gt; support that matches
+        this training shape out of the box, and it's small enough to
+        fine-tune on a free Colab GPU and, later, run entirely on my M1.
+        Additionally the Unsloth (the framework I used) has a purpose-built
+        notebook for exactly this model family. So honestly, it wasn't much
+        to do with capability, it was more to do with convenience and as a
+        base to run my experiment on.
+      </p>
+
+      <!-- Original note: "[VISUAL — expandable panel, collapsed by
+           default: a small diagram showing the full ~4-billion-parameter
+           base model greyed out and frozen, with only a thin, highlighted
+           sliver — the actual trainable LoRA matrices, sitting at specific
+           attention and feed-forward layers — lit up and labelled 'under
+           1% of the model actually trains.' Meant as a quick, optional
+           stop for anyone who wants the visual before reading on, not a
+           mandatory read. Placeholder — final visual to be decided.]"
+           Author's own production note — excluded from the rendered page,
+           kept here verbatim. -->
+
+      <p class="aside">
+        Practically: LoRA freezes the entire base model and instead trains
+        small, low-rank adapter matrices bolted onto specific attention and
+        feed-forward layers, under 1% of the model's total parameters
+        actually move. A setting called train_on_responses_only masks the
+        loss so the model is only ever penalised for getting its own words
+        wrong, never for the system prompt or the retrieved context it was
+        handed, which would otherwise waste training signal teaching the
+        model to predict text it was never meant to generate in the first
+        place. Rank, how large those adapter matrices are, stayed at 16
+        across both training runs I ran; when the second run's
+        reasoning-block discipline actually got worse rather than better, I
+        deliberately didn't raise rank as a fix, because the problem looked
+        like a training-exposure issue, not a capacity one, and turning
+        that dial up risked quietly breaking the formatting compliance that
+        was already sitting at a clean 35 out of 35.
+      </p>
+
+      <p>
+        As I touched upon in my chunking section, the corpus and thus also
+        the training dataset went through a couple of iterations. This was
+        the most painful decision because I threw away 200 training examples
+        which took me a considerable time to piece together. I then rebuilt
+        and landed at 219 examples. I used Weights and Biases to track my
+        training, looking at loss curves, eval runs etc.
+      </p>
+
+      <!-- Original note: "Explain how loss curves and eval runs work –
+           attach screenshots." — author's own production note, excluded
+           from the rendered page, kept here verbatim. -->
+
+      <p>
+        While the graphs did look nice, the loss curves didn't help my
+        understanding of specific nuances such as if my &lt;think&gt; block
+        was behaving the way I wanted it to. By design, both runs produced
+        perfectly normal loss curves, so in the end the &lt;think&gt; block
+        check needed a full, manual read-through of all 35 holdout examples.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="s5-heading">
+      <h2 id="s5-heading">5. Getting it running</h2>
+      <p>
+        After fine tuning my model, and setting up the dataset, RAG and
+        everything. I had to figure out how to house and be able to call
+        and run this model. This part is just the technical specs, so if it
+        interests you keep reading, or skim over this next paragraph. The
+        path I took was: LoRA adapter, reloaded and merged into the base
+        model at full 16-bit precision (not the 4-bit precision training
+        itself used), then quantized down to a much smaller GGUF file at
+        q4_k_m precision. This was specifically so my 4-billion-parameter
+        model could run at a reasonable speed on my laptop, then I loaded it
+        into Ollama, and finally wired into the actual retrieval pipeline.
+        Also just pointing out that the 4-bit one during training is purely
+        a memory trick to fit inside Colab's free GPU tier, and the q4_k_m
+        one after training is purely a deployment-size trick. Lots of small
+        workarounds to utilise the infrastructure I have most efficiently.
+      </p>
+      <p>
+        The finished thing runs entirely on my laptop. When I load this up
+        for a fresh run, it takes about 7 seconds of retrieval and 47
+        seconds of generation, roughly 54 seconds end to end. I will say
+        it's not the fastest, but pretty reasonable given the specs. I did
+        also run a test by pushing it across multiple queries and what I saw
+        was it doesn't hold as well. Across ten queries run back to back
+        with no recovery time between them, retrieval slowed by 5.6 times
+        and generation by 2.2 times by the eighth to tenth query. Finally, I
+        designed the dashboard on Streamlit, very basic UX, choosing a
+        colour scheme that looked semi-professional for this exercise and
+        an output format that you'd be able to read.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="s6-heading">
+      <h2 id="s6-heading">6. How useful is this model</h2>
+      <p>
+        Well to be very honest, with this first attempt I wouldn't use it to
+        make any decisions for me. A frontier model is just so much more
+        superior (and moving that much faster), and any open source local
+        model trained like this isn't going to be able to compete, you'd
+        need much more powerful GPUs and holistic datasets etc. But that
+        being said, it was pretty reliable in terms of consistency of
+        output. It is also a really good tool to have If client information
+        has various data privacy laws that require it to be housed locally.
+      </p>
+      <p>
+        In essence this is just an in-house reasoning tool for one specific
+        cross-border tax relationship, not at all something trying to
+        compete with a frontier model's raw factual coverage. What this
+        tool does very well that it answers in a structured and repeatable
+        fashion. In terms of results, the right source document lands in
+        its top five results essentially every time, and first, correctly,
+        in all but one case that I tested. And I daresay most importantly it
+        is heavily trained to have the ability to say it doesn't know rather
+        than confidently make something up, which is the entire point of
+        teaching a small model behaviour.
+      </p>
+      <p>
+        Because this was an exercise on trying to build out an SLM, I want
+        to emphasise the stuff it didn't do as well, so when I do run a
+        second run of a similar build, or consulting at an enterprise
+        level, these are something I am going to be looking out for.
+      </p>
+      <ul>
+        <li>
+          One treaty provision, a royalty rate clause, retrieves correctly
+          but ranks lower than it should, specifically because a much
+          larger, tangentially related document in the same jurisdiction
+          crowds the same top-five slots on similar vocabulary. I explored
+          and think the fix is a corpus-balancing problem, not really a
+          retrieval-logic one.
+        </li>
+        <li>
+          The model can correctly flag when a transaction size exceeds a
+          regulatory cap and recommend restructuring, but only when a
+          question explicitly asks whether the standard route is
+          sufficient. It needs simple 'how do I move this much money'
+          question, and doesn't spontaneously trigger that comparison on
+          its own, it stops at a qualitative warning rather than computing
+          the implied timescale. This added quantitative judgment is
+          something I considered training separately and then adding on
+        </li>
+        <li>
+          And its selective use of the reasoning block, while reliable on
+          straightforward formatting, is a bit more inconsistent on the
+          harder judgment of when a question actually needs multi-step
+          reasoning versus a direct lookup.
+        </li>
+      </ul>
+      <p>Good to note, good to keep in mind.</p>
+    </section>
+
+    <section class="section" aria-labelledby="s7-heading">
+      <h2 id="s7-heading">7. Great, now where does this go</h2>
+      <p>
+        I think the reason this kind of project is going to matter more,
+        over the next year is fairly simple. Throwing a frontier model's API
+        at every problem is convenient, but it's not always the right tool,
+        and for a narrow, well-defined, repeatable job, a small model that
+        can run entirely on your own hardware is often the better choice. In
+        this case data never leaves your infrastructure, the models
+        behaviour is yours to shape and constrain exactly the way you need
+        it to, and you won't pay tokens for a capability that you won't
+        need. What I want to reiterate is that I don't think that means big
+        general models stop mattering, they're always going to be one of
+        the most powerful reasoning tools, but I do think the instinct to
+        reach for one by default, for every problem, regardless of scope, is
+        going to look increasingly lazy. And companies are going to slowly
+        start drifting away from that.
+      </p>
+      <p>
+        On a personal level this was a project to understand the difference
+        between a model knowing something and a model behaving correctly
+        around something it's been handed. I managed to train, run and host
+        an SLM to cater to my specific use case, and I will be trying this
+        same exercises on more targeted requirements and stronger machines.
+        I do find that this project has equipped me enough to, down the
+        line, start training and housing my own models. And when a
+        disgustingly (conscious word choice) strong open source model from
+        China, maybe Kimi 75 rolls around, I am going to fine tune that to
+        just run whatever I need to. This is the democratisation of
+        capability that I have been screaming about from the rooftops.
+        You'll see. For now we have a working system, that knows what it
+        doesn't know and does what it's been taught.
+      </p>
+      <p class="credits">
+        Built solo. Qwen3-4B, fine-tuned via LoRA (rank 16) on Google
+        Colab's free T4 tier &middot; hybrid BM25 + dense retrieval with
+        jurisdiction-aware filtering and a CrossEncoder reranker, over 24
+        documents and 1,217 chunks in ChromaDB &middot; deployed locally via
+        Ollama, CPU only.
+      </p>
+    </section>
+  </article>
+</BaseLayout>
+
+<style>
+  .piece {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: var(--space-8) var(--space-10);
+  }
+
+  .piece-header .dek {
+    font-size: var(--size-dek);
+    color: var(--ink-soft);
+    margin-top: var(--space-4);
+  }
+
+  .byline {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+    margin-top: var(--space-4);
+  }
+
+  .intro-para {
+    font-size: var(--size-body);
+    margin-top: var(--space-8);
+  }
+
+  .spec-line {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+    margin: var(--space-4) 0 0 0;
+  }
+
+  .section {
+    margin-top: var(--space-16);
+  }
+  .section > h2 {
+    margin-bottom: var(--space-4);
+  }
+  .section h3 {
+    margin-top: var(--space-8);
+    margin-bottom: var(--space-3);
+  }
+
+  ul {
+    margin: 0 0 var(--space-4) 0;
+    padding-left: 1.25rem;
+  }
+  ul li {
+    margin-bottom: var(--space-2);
+  }
+
+  .aside {
+    font-style: italic;
+    color: var(--ink-soft);
+    padding: var(--space-4) var(--space-6);
+    background: var(--paper-2);
+    border-left: 2px solid var(--line);
+  }
+
+  .credits {
+    margin-top: var(--space-8);
+    padding-top: var(--space-4);
+    border-top: var(--border);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+    font-style: normal;
+  }
+
+  @media (max-width: 639px) {
+    .piece {
+      padding: var(--space-4);
+    }
+    .section {
+      margin-top: var(--space-12);
+    }
+  }
+</style>
