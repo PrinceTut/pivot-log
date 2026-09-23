@@ -1,0 +1,71 @@
+---
+// Sticky "contents" rail for long articles (>= 1200px wide only). Built at runtime
+// from the article's own <section> > h2[id] headings, so it never needs manual
+// upkeep. Without JavaScript it simply stays empty and hidden; nothing is lost.
+---
+
+<nav class="rail" aria-label="Sections" hidden>
+  <p class="rail__label">Contents</p>
+  <ol class="rail__list"></ol>
+</nav>
+
+<style>
+  .rail {
+    grid-column: 1;
+    grid-row: 1 / span 60;
+    align-self: start;
+    position: sticky;
+    top: 110px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.35;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .rail__label { font-weight: 700; margin: 0 0 12px; padding-bottom: 8px; border-bottom: var(--rule); }
+  .rail__list { list-style: none; margin: 0; padding: 0; }
+  .rail__list :global(a) {
+    display: block;
+    padding: 7px 8px;
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+  .rail__list :global(a:hover) { color: var(--black); background: var(--slab); }
+  .rail__list :global(a.is-active) { background: var(--black); color: #fff; }
+  @media (max-width: 1199px) { .rail { display: none !important; } }
+</style>
+
+<script>
+  function setupRail() {
+    const rail = document.querySelector<HTMLElement>('.rail');
+    if (!rail) return;
+    const article = rail.closest('article');
+    const heads = article ? Array.from(article.querySelectorAll<HTMLElement>('section > h2[id]')) : [];
+    const list = rail.querySelector('.rail__list');
+    if (!heads.length || !list) return;
+    list.innerHTML = '';
+    const links = heads.map((h) => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = `#${h.id}`;
+      a.textContent = h.textContent || '';
+      li.appendChild(a);
+      list.appendChild(li);
+      return a;
+    });
+    rail.hidden = false;
+    // Current section = last heading whose top is above a line 35% down the viewport.
+    // Position-based (not a crossing band), so jumps and fast scrolls can't skip it.
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const line = window.innerHeight * 0.35;
+      let current = -1;
+      heads.forEach((h, i) => { if (h.getBoundingClientRect().top <= line) current = i; });
+      links.forEach((l, k) => l.classList.toggle('is-active', k === current));
+    };
+    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+    update();
+  }
+  document.addEventListener('astro:page-load', setupRail);
+</script>

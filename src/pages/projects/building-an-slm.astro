@@ -1,5 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArticleHeader from '../../components/ArticleHeader.astro';
+import SectionRail from '../../components/SectionRail.astro';
+import { withBase } from '../../utils/url';
+import '../../styles/article.css';
 import StatStrip from '../../components/StatStrip.astro';
 import Abstract from '../../components/Abstract.astro';
 import type { ResearchMeta } from '../../types';
@@ -18,13 +22,14 @@ export const meta: ResearchMeta = {
 };
 ---
 
-<BaseLayout title={meta.title} description={meta.dek}>
+<BaseLayout title={meta.title} description={meta.dek} nav="gold">
+  <ArticleHeader theme="gold" title={meta.title} backHref={withBase('/projects')} backLabel="Projects" meta={['Pivot Log · Independent research']}>
+    <Fragment slot="dek">{meta.dek}</Fragment>
+    <StatStrip slot="after" stats={meta.stats} />
+  </ArticleHeader>
+
   <article class="piece">
-    <header class="piece-header">
-      <h1>{meta.title}</h1>
-      <p class="dek">{meta.dek}</p>
-      <p class="byline">Pivot Log &middot; Independent research</p>
-    </header>
+    <SectionRail />
 
     <p class="intro-para">
       I built a full RAG-plus-fine-tuned-SLM pipeline for India-Switzerland
@@ -32,8 +37,6 @@ export const meta: ResearchMeta = {
       be in a curated database chunked and retrieved and the fine-tuned
       model behaving according to my specific use case.
     </p>
-
-    <StatStrip stats={meta.stats} />
 
     <p class="spec-line">
       24 documents &middot; 1,217 chunks &middot; 219 training examples &middot;
@@ -437,82 +440,3 @@ export const meta: ResearchMeta = {
     </section>
   </article>
 </BaseLayout>
-
-<style>
-  .piece {
-    max-width: var(--content-width);
-    margin: 0 auto;
-    padding: var(--space-8) var(--space-10);
-  }
-
-  .piece-header .dek {
-    font-size: var(--size-dek);
-    color: var(--ink-soft);
-    margin-top: var(--space-4);
-  }
-
-  .byline {
-    font-family: var(--font-sans);
-    font-size: 0.875rem;
-    color: var(--ink-soft);
-    margin-top: var(--space-4);
-  }
-
-  .intro-para {
-    font-size: var(--size-body);
-    margin-top: var(--space-8);
-  }
-
-  .spec-line {
-    font-family: var(--font-mono);
-    font-size: 0.8125rem;
-    color: var(--ink-soft);
-    margin: var(--space-4) 0 0 0;
-  }
-
-  .section {
-    margin-top: var(--space-16);
-  }
-  .section > h2 {
-    margin-bottom: var(--space-4);
-  }
-  .section h3 {
-    margin-top: var(--space-8);
-    margin-bottom: var(--space-3);
-  }
-
-  ul {
-    margin: 0 0 var(--space-4) 0;
-    padding-left: 1.25rem;
-  }
-  ul li {
-    margin-bottom: var(--space-2);
-  }
-
-  .aside {
-    font-style: italic;
-    color: var(--ink-soft);
-    padding: var(--space-4) var(--space-6);
-    background: var(--paper-2);
-    border-left: 2px solid var(--line);
-  }
-
-  .credits {
-    margin-top: var(--space-8);
-    padding-top: var(--space-4);
-    border-top: var(--border);
-    font-family: var(--font-mono);
-    font-size: 0.8125rem;
-    color: var(--ink-soft);
-    font-style: normal;
-  }
-
-  @media (max-width: 639px) {
-    .piece {
-      padding: var(--space-4);
-    }
-    .section {
-      margin-top: var(--space-12);
-    }
-  }
-</style>

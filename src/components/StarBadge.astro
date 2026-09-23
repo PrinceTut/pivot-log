@@ -1,0 +1,36 @@
+---
+// Star-in-circle badge from the Figma components (Group 4 / Group 12).
+// Geometry is exact: 88-unit circle with a 9-unit inside stroke, 4-point star at
+// 59.3 units with the golden inner ratio 0.382. The prototype cycles four
+// variants at 0.5s linear (0 -> 90 -> 180 -> 270deg), i.e. one turn every 2s.
+interface Props {
+  fill?: 'gold' | 'white';
+  class?: string;
+  label?: string;
+}
+const { fill = 'gold', class: className, label } = Astro.props;
+---
+
+<svg
+  class:list={['star-badge', `star-badge--${fill}`, className]}
+  viewBox="0 0 88 88"
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+>
+  <g class="star-badge__spin">
+    <circle cx="44" cy="44" r="39.5" stroke="#000" stroke-width="9" />
+    <polygon points="44.00,14.36 52.01,35.99 73.64,44.00 52.01,52.01 44.00,73.64 35.99,52.01 14.36,44.00 35.99,35.99" fill="#000" />
+  </g>
+</svg>
+
+<style>
+  .star-badge { display: block; overflow: visible; }
+  .star-badge--gold circle { fill: var(--gold); }
+  .star-badge--white circle { fill: #fff; }
+  .star-badge__spin { transform-origin: 44px 44px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .star-badge__spin { animation: star-spin 2s linear infinite; }
+  }
+  @keyframes star-spin { to { transform: rotate(360deg); } }
+</style>

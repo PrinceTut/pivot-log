@@ -1,5 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArticleHeader from '../../components/ArticleHeader.astro';
+import SectionRail from '../../components/SectionRail.astro';
+import { withBase } from '../../utils/url';
+import '../../styles/article.css';
 import StatStrip from '../../components/StatStrip.astro';
 import Abstract from '../../components/Abstract.astro';
 import Matrix from '../../components/Matrix.astro';
@@ -107,20 +111,19 @@ const selfReflectBars = [
 ];
 ---
 
-<BaseLayout title={meta.title} description={meta.dek}>
-  <article class="piece">
-    <header class="piece-header">
-      <h1>{meta.title}</h1>
-      <p class="dek">
+<BaseLayout title={meta.title} description={meta.dek} nav="gold">
+  <ArticleHeader theme="gold" title={meta.title} backHref={withBase('/projects')} backLabel="Projects" meta={['Pivot Log · Independent research']}>
+    <Fragment slot="dek">
         This is an independent exercise in building and breaking retrieval
         systems on legal contracts. I used Six ways to cut a document, four
         ways to search it, and 253 questions to find out how chunking and
         retrieval systems behave, and what are some best use cases.
-      </p>
-      <p class="byline">Pivot Log &middot; Independent research</p>
-    </header>
+      </Fragment>
+    <StatStrip slot="after" stats={meta.stats} />
+  </ArticleHeader>
 
-    <StatStrip stats={meta.stats} />
+  <article class="piece">
+    <SectionRail />
 
     <Abstract>
       This is an independent exercise in building a retrieval-augmented
@@ -724,64 +727,3 @@ const selfReflectBars = [
     </section>
   </article>
 </BaseLayout>
-
-<style>
-  .piece {
-    max-width: var(--content-width);
-    margin: 0 auto;
-    padding: var(--space-8) var(--space-10);
-  }
-
-  .piece-header .dek {
-    font-size: var(--size-dek);
-    color: var(--ink-soft);
-    margin-top: var(--space-4);
-  }
-
-  .byline {
-    font-family: var(--font-sans);
-    font-size: 0.875rem;
-    color: var(--ink-soft);
-    margin-top: var(--space-4);
-  }
-
-  .section {
-    margin-top: var(--space-16);
-  }
-
-  .section > h2 {
-    margin-bottom: var(--space-4);
-  }
-
-  .section h3 {
-    margin-top: var(--space-8);
-    margin-bottom: var(--space-3);
-  }
-
-  table {
-    margin: var(--space-6) 0;
-  }
-
-  .credits {
-    margin-top: var(--space-8);
-    padding-top: var(--space-4);
-    border-top: var(--border);
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    color: var(--ink-soft);
-  }
-
-  @media (max-width: 639px) {
-    .piece {
-      padding: var(--space-4);
-    }
-    .section {
-      margin-top: var(--space-12);
-    }
-    table {
-      display: block;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-  }
-</style>

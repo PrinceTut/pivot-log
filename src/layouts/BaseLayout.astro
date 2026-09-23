@@ -1,16 +1,25 @@
 ---
+import '@fontsource/inter-tight/400.css';
+import '@fontsource/inter-tight/400-italic.css';
+import '@fontsource/inter-tight/500.css';
+import '@fontsource/inter-tight/700.css';
+import '@fontsource/victor-mono/400.css';
+import '@fontsource/victor-mono/700.css';
+import '@fontsource/redaction-35/400.css';
+import '@fontsource/redaction-35/700.css';
 import '../styles/tokens.css';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import { ClientRouter } from 'astro:transitions';
 import { withBase } from '../utils/url';
+import { ADOBE_KIT_ID } from '../config';
 
 interface Props {
   title: string;
   description: string;
+  nav?: 'gold' | 'dark' | 'paper' | false;
 }
-
-const { title, description } = Astro.props;
+const { title, description, nav = 'paper' } = Astro.props;
 ---
 
 <!doctype html>
@@ -20,20 +29,23 @@ const { title, description } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} · Pivot Log</title>
     <meta name="description" content={description} />
+    <meta name="theme-color" content="#f2cd53" />
     <link rel="icon" type="image/png" href={withBase('/favicon.png')} />
+    {ADOBE_KIT_ID && <link rel="stylesheet" href={`https://use.typekit.net/${ADOBE_KIT_ID}.css`} />}
+    {ADOBE_KIT_ID && (
+      <script is:inline data-astro-rerun>
+        document.fonts.ready.then(function () {
+          if (document.fonts.check('700 1em aktiv-grotesk')) document.documentElement.classList.add('fonts-adobe');
+        });
+      </script>
+    )}
     <ClientRouter />
   </head>
   <body>
-    <Nav />
+    {nav && <Nav theme={nav} />}
     <main>
       <slot />
     </main>
     <Footer />
   </body>
 </html>
-
-<style>
-  main {
-    display: block;
-  }
-</style>

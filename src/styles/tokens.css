@@ -1,172 +1,132 @@
+/* Pivot Log design tokens: derived from the "landing" frame of pivot_logs.fig */
 :root {
-  /* Color — cool slate/graphite (spec §3) */
-  --paper: #f4f5f6;
-  --paper-2: #e9ebed;
-  --ink: #1b1f24;
-  --ink-soft: #3a414a;
-  --line: #d7dbde;
-  --accent: #526478;
-  --gold-clay: #a9895a;
-  --positive: #4a8567;
-  --positive-soft: #e3ede7;
+  /* Colour (exact values used in the Figma landing frame) */
+  --paper: #f4f5f6;        /* page background */
+  --gold: #f2cd53;         /* hero / masthead block */
+  --black: #000000;        /* type, redaction bars, pills */
+  --slab: #d9d9d9;         /* grey block (landing placeholder slot) */
+  --ink: #000000;
+  --ink-soft: #3a414a;     /* footer text */
+  --line: rgba(0, 0, 0, 0.16);
+  /* Data valence only: positive = Fern from the palette, negative = existing clay */
+  --positive: #50723c;
+  --positive-soft: #dde6d6;
   --negative: #a9503f;
   --negative-soft: #f2e3df;
 
-  /* Type families */
-  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  /* Legacy aliases still referenced by older components */
+  --paper-2: var(--slab);
+  --accent: var(--black);
 
-  /* Type scale — desktop (spec §3) */
+  /* Type families: Adobe Fonts name first (if a kit is loaded), then the self-hosted fallback */
+  --font-display: "aktiv-grotesk", "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+  --font-body: var(--font-display);
+  --font-pixel: "lores-12", "Redaction 35", Georgia, serif;
+  --font-mono: "Victor Mono", Menlo, Consolas, monospace;
+  --font-ui: "Helvetica Neue", "Inter Tight", Arial, sans-serif;
+  --font-serif: var(--font-body);   /* legacy alias: body is now the grotesk */
+  --font-sans: var(--font-display); /* legacy alias */
+
+  /* Display tracking: Aktiv Grotesk in the Figma is -28px at 300px (-0.093em).
+     Inter Tight has tighter sidebearings, so it needs less. Swapped via .fonts-adobe. */
+  --track-display: -0.052em;
+  --track-statement: -0.03em;
+
+  /* Legacy type scale still used inside article bodies */
   --size-h1: 2.5rem;
   --size-h2: 1.5rem;
   --size-h3: 1.125rem;
-  --size-body: 1.0625rem;
+  --size-body: 1.1875rem;
   --size-dek: 1.25rem;
   --size-stat: 2rem;
   --size-stat-label: 0.8125rem;
   --size-caption: 0.875rem;
-  --size-nav: 0.9375rem;
+  --size-nav: 0.8125rem;
 
-  /* Spacing scale — base 4px */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-12: 48px;
-  --space-16: 64px;
-  --space-24: 96px;
+  /* Spacing (4px base) */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px;
+  --space-8: 32px; --space-10: 40px; --space-12: 48px; --space-16: 64px; --space-24: 96px;
 
-  /* Layout */
-  --content-width: 50rem;
+  /* Layout: 55px side margin at 1920 in the Figma = 2.86% */
+  --gutter: clamp(20px, 2.86vw, 56px);
+  --content-width: 46rem;
   --content-width-wide: 62rem;
   --border: 1px solid var(--line);
+  --rule: 6px solid var(--black);   /* the 6px black rule under the hero logo */
 
-  /* Motion — two tiers, used everywhere instead of one-off durations.
-     "fast" for hover/interactive feedback (buttons, links, nav state).
-     "reveal" for content appearing/crossfading on scroll. */
-  --transition-fast: 0.15s ease;
+  /* Motion (tiers from Figma prototype: pill hover 0.05s, cursor 0.3s, badge 2s/rev) */
+  --transition-fast: 0.12s ease;
   --transition-reveal: 0.3s ease;
 }
 
+:root.fonts-adobe {
+  --track-display: -0.093em;
+  --track-statement: -0.039em;
+}
+
 @media (max-width: 639px) {
-  :root {
-    --size-h1: 1.875rem;
-    --size-stat: 1.5rem;
-  }
+  :root { --size-h1: 1.875rem; --size-stat: 1.5rem; --size-body: 1.0625rem; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html {
-  background: var(--paper);
-  scroll-behavior: smooth;
-}
+* { box-sizing: border-box; }
+html { background: var(--paper); scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-serif);
+  font-family: var(--font-body);
   font-size: var(--size-body);
-  line-height: 1.6;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Links — underlined at rest, not color-only (spec: interactive states) */
-a {
-  color: var(--accent);
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
-}
-a:hover {
-  color: var(--ink);
+/* Container-query scaling: inside .cq, 1 --u = 1px of the 1920px Figma frame */
+.cq { container-type: inline-size; width: 100%; }
+.cq > * { --u: calc(100cqw / 1920); }
+
+/* Links: black text, gold underline (black underline on gold backgrounds) */
+a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--gold);
+    text-decoration-thickness: 0.18em; text-underline-offset: 0.18em; }
+a:hover { text-decoration-color: var(--ink); }
+
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
+  outline: 3px solid var(--black); outline-offset: 3px;
 }
 
-/* Focus-visible — 2px accent outline, never suppressed without replacement */
-a:focus-visible,
-button:focus-visible,
-[tabindex]:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* Reduced motion — transitions only when the user hasn't asked to avoid them */
 @media (prefers-reduced-motion: no-preference) {
-  a, .matrix-cell, .index-entry {
-    transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
-  }
+  a { transition: text-decoration-color var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast); }
 }
 
-h1, h2, h3 {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  margin: 0;
-  color: var(--ink);
-}
-h1 { font-size: var(--size-h1); line-height: 1.15; }
-h2 { font-size: var(--size-h2); line-height: 1.3; }
-h3 {
-  font-family: var(--font-sans);
-  font-size: var(--size-h3);
-  line-height: 1.4;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  font-weight: 600;
-}
+h1, h2, h3 { margin: 0; color: inherit; font-family: var(--font-display); font-weight: 700; }
+h1 { font-size: var(--size-h1); line-height: 1; letter-spacing: var(--track-statement); }
+h2 { font-size: var(--size-h2); line-height: 1.15; }
+h3 { font-size: var(--size-h3); line-height: 1.3; text-transform: uppercase; letter-spacing: 0; }
 
 p { margin: 0 0 var(--space-4) 0; }
+strong { font-weight: 700; }
 
-table {
-  border-collapse: collapse;
-  width: 100%;
-  font-family: var(--font-sans);
-  font-size: 0.9375rem;
-}
-caption {
-  font-family: var(--font-serif);
-  font-style: italic;
-  color: var(--ink-soft);
-  font-size: var(--size-caption);
-  text-align: left;
-  margin-bottom: var(--space-2);
-  caption-side: top;
-}
-th, td {
-  border-bottom: var(--border);
-  padding: var(--space-2) var(--space-3);
-  text-align: left;
-}
-th {
-  font-weight: 600;
-  color: var(--ink-soft);
-  font-size: 0.8125rem;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-td.num, th.num { font-family: var(--font-mono); text-align: right; }
+table { border-collapse: collapse; width: 100%; font-family: var(--font-mono); font-size: 0.875rem; }
+caption { font-family: var(--font-body); font-style: italic; color: var(--ink-soft); font-size: var(--size-caption);
+          text-align: left; margin-bottom: var(--space-3); caption-side: top; line-height: 1.5; }
+th, td { border-bottom: 1px solid var(--line); padding: var(--space-3) var(--space-3); text-align: left; vertical-align: top; }
+thead th { background: var(--black); color: #fff; font-family: var(--font-mono); font-weight: 700; font-size: 0.75rem;
+           text-transform: uppercase; letter-spacing: 0.04em; border-bottom: none; }
+tbody th { font-family: var(--font-display); font-weight: 700; font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.01em; }
+td.num, th.num { text-align: right; }
 
-figcaption {
-  font-family: var(--font-serif);
-  font-style: italic;
-  color: var(--ink-soft);
-  font-size: var(--size-caption);
-  margin-top: var(--space-2);
-}
+figcaption { font-family: var(--font-body); font-style: italic; color: var(--ink-soft); font-size: var(--size-caption); margin-top: var(--space-2); }
 
-code {
-  font-family: var(--font-mono);
-  font-size: 0.9em;
-  background: var(--paper-2);
-  padding: 0.1em 0.35em;
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--slab); padding: 0.1em 0.35em; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+           clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* Blinking pixel cursor: Figma swaps state every 0.3s */
+.cursor { font-family: var(--font-pixel); font-weight: 700; display: inline-block; margin-left: 0.08em; }
+@media (prefers-reduced-motion: no-preference) {
+  .cursor { animation: cursor-blink 0.6s steps(1, end) infinite; }
 }
+@keyframes cursor-blink { 50% { opacity: 0; } }

@@ -1,137 +1,86 @@
 ---
 import type { ResearchStat } from '../types';
 import { withBase } from '../utils/url';
+import GlassPill from './GlassPill.astro';
+import ProjectIcon from './ProjectIcon.astro';
 
 interface Props {
-  href: string; // site-internal path, e.g. '/projects/my-slug' — base-prefixed here
+  href: string;          // site-internal path, e.g. '/projects/my-slug' (base-prefixed here)
+  slug: string;
+  index: number;
   title: string;
   dek: string;
   description?: string;
   stats?: ResearchStat[];
-  linkLabel?: string; // defaults to "Read the paper" — override per section (e.g. "Read the note")
+  linkLabel?: string;
 }
-
-const { href, title, dek, description, stats, linkLabel = 'Read the paper' } = Astro.props;
+const { href, slug, index, title, dek, description, stats, linkLabel = 'Read the paper' } = Astro.props;
 const link = withBase(href);
 ---
 
-<article class="paper-entry" data-scroll-entry>
-  <h3><a href={link}>{title}</a></h3>
-  <p class="dek">{dek}</p>
-  {description && <p class="description">{description}</p>}
-  {stats && stats.length > 0 && (
-    <div class="stats-row">
-      {stats.map((s) => (
-        <div class="stat-block">
-          <div class="stat-value">{s.value}</div>
-          <div class="stat-label">{s.label}</div>
-        </div>
-      ))}
-    </div>
-  )}
-  <a class="read-link" href={link}>{linkLabel} &rarr;</a>
+<article class="entry" data-scroll-entry>
+  <p class="entry__num" aria-hidden="true">{String(index).padStart(2, '0')}</p>
+  <a class="entry__icon" href={link} tabindex="-1" aria-hidden="true"><ProjectIcon slug={slug} /></a>
+  <div class="entry__body">
+    <h2 class="entry__title"><a href={link}>{title}</a></h2>
+    <p class="entry__dek">{dek}</p>
+    {description && <p class="entry__desc">{description}</p>}
+    {stats && stats.length > 0 && (
+      <dl class="entry__stats">
+        {stats.map((s) => (<div><dt>{s.value}</dt><dd>{s.label}</dd></div>))}
+      </dl>
+    )}
+    <GlassPill href={link} label={linkLabel} size="md" />
+  </div>
 </article>
 
 <style>
-  .paper-entry {
-    padding: var(--space-16) 0;
-    border-bottom: var(--border);
+  .entry {
+    display: grid;
+    grid-template-columns: 180px 150px minmax(0, 1fr);
+    gap: 40px;
+    padding: 48px 0 56px;
+    border-top: 2px solid var(--black);
     opacity: 1;
   }
-  .paper-entry:first-child {
-    padding-top: var(--space-8);
-  }
-  /* Default is always fully visible — JS only ever *adds* dimming to
-     entries that aren't the current scroll focus. If this component
-     gets reused somewhere without the corresponding observer script,
-     entries simply stay at full opacity rather than getting stuck dim.
-     0.75, not a more aggressive fade — verified against WCAG AA contrast
-     (4.5:1 minimum) for the lightest text color used inside an entry;
-     0.45 measured at 2.3:1, a real accessibility failure, not just a
-     stylistic choice. */
-  .paper-entry.dimmed {
-    opacity: 0.75;
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .paper-entry {
-      transition: opacity var(--transition-reveal);
-    }
-  }
+  .entry:first-child { border-top: var(--rule); }
+  /* JS only ever adds dimming; 0.75 keeps the dimmed text at WCAG AA (4.7:1) */
+  .entry.dimmed { opacity: 0.75; }
+  @media (prefers-reduced-motion: no-preference) { .entry { transition: opacity var(--transition-reveal); } }
 
-  h3 {
-    font-family: var(--font-serif);
-    text-transform: none;
-    letter-spacing: normal;
-    font-weight: 600;
-    font-size: 2rem;
-    margin-bottom: var(--space-4);
+  .entry__num {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 150px;
+    line-height: 0.78;
+    letter-spacing: var(--track-display);
   }
-  h3 a {
-    color: var(--ink);
-    text-decoration: none;
-  }
-  h3 a:hover {
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-  }
+  .entry__icon { display: block; width: 150px; height: 150px; padding: 18px; background: var(--slab); }
+  .entry__icon:hover { background: var(--gold); }
 
-  .dek {
-    font-family: var(--font-sans);
-    font-size: 1.0625rem;
-    color: var(--ink-soft);
-    max-width: 44rem;
-    margin-bottom: var(--space-3);
-  }
+  .entry__title { margin: 0 0 16px; font-size: clamp(28px, 3vw, 52px); line-height: 0.95; letter-spacing: var(--track-statement); text-transform: uppercase; }
+  .entry__title a { text-decoration: none; color: inherit; }
+  .entry__title a:hover { text-decoration: underline; text-decoration-color: var(--gold); text-decoration-thickness: 0.12em; }
+  .entry__dek { font-size: 1.1875rem; line-height: 1.5; margin: 0 0 12px; max-width: 46rem; }
+  .entry__desc { font-size: 1rem; line-height: 1.6; color: var(--ink-soft); margin: 0 0 24px; max-width: 46rem; }
 
-  .description {
-    font-family: var(--font-serif);
-    font-size: 1.0625rem;
-    color: var(--ink);
-    max-width: 44rem;
-    margin-bottom: var(--space-8);
-  }
+  .entry__stats { display: flex; flex-wrap: wrap; gap: 20px 48px; margin: 0 0 28px; }
+  .entry__stats dt { font-family: var(--font-display); font-weight: 700; font-size: 44px; line-height: 1; letter-spacing: var(--track-statement); }
+  .entry__stats dd { margin: 4px 0 0; font-family: var(--font-mono); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
 
-  .stats-row {
-    display: flex;
-    gap: var(--space-16);
-    margin-bottom: var(--space-8);
+  @media (max-width: 1099px) {
+    .entry { grid-template-columns: 110px minmax(0, 1fr); }
+    .entry__num { font-size: 96px; }
+    .entry__icon { grid-column: 1; grid-row: 2; width: 110px; height: 110px; padding: 12px; }
+    .entry__body { grid-column: 2; grid-row: 1 / span 2; }
   }
-  .stat-value {
-    font-family: var(--font-sans);
-    font-size: 2rem;
-    font-weight: 600;
-    color: var(--ink);
-    line-height: 1.1;
-  }
-  .stat-label {
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    color: var(--ink-soft);
-    margin-top: var(--space-1);
-    max-width: 12rem;
-  }
-
-  .read-link {
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    text-decoration: none;
-    color: var(--ink);
-  }
-  .read-link:hover {
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-  }
-
   @media (max-width: 639px) {
-    h3 {
-      font-size: 1.5rem;
-    }
-    .stats-row {
-      flex-wrap: wrap;
-      gap: var(--space-6) var(--space-8);
-    }
+    .entry { grid-template-columns: 1fr; gap: 16px; padding: 32px 0 40px; }
+    .entry__num { font-size: 72px; }
+    .entry__icon { display: none; }
+    .entry__body { grid-column: 1; grid-row: auto; }
+    .entry__stats dt { font-size: 34px; }
+    .entry__stats { gap: 16px 28px; }
   }
 </style>

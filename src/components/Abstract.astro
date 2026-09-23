@@ -7,24 +7,23 @@
 </section>
 
 <style>
-  .abstract {
-    margin: var(--space-8) 0;
-  }
+  .abstract { margin: 0 0 var(--space-8); }
   .abstract h2 {
-    /* Visually matches the site's h3 label style (small, uppercase,
-       sans) — kept as an h2 tag so the page's heading levels go
-       h1 -> h2 -> h2 -> h2... without skipping a level. */
-    font-family: var(--font-sans);
-    font-size: var(--size-h3);
+    display: inline-block;
+    margin: 0 0 var(--space-4);
+    padding: 4px 10px;
+    background: var(--black);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 12px;
     line-height: 1.4;
     text-transform: uppercase;
-    letter-spacing: 0.02em;
-    font-weight: 600;
-    margin-bottom: var(--space-3);
-    color: var(--ink-soft);
+    letter-spacing: 0.06em;
   }
   .abstract p {
     margin: 0;
-    font-size: var(--size-body);
+    font-size: 1.3125rem;
+    line-height: 1.5;
   }
 </style>

@@ -1,0 +1,156 @@
+/* Article bodies (projects: .piece, scratchnotes: .note). Imported by each article page. */
+
+.piece, .note {
+  padding: var(--space-16) var(--gutter) 0;
+  font-size: var(--size-body);
+  line-height: 1.65;
+}
+.note { max-width: calc(var(--content-width) + 2 * var(--gutter)); margin: 0 auto; }
+
+/* Projects: sticky contents rail + reading column (rail only at >= 1200px) */
+.piece { display: grid; grid-template-columns: minmax(0, var(--content-width)); justify-content: center; }
+.piece > * { grid-column: 1; }
+@media (min-width: 1200px) {
+  .piece { grid-template-columns: 220px minmax(0, var(--content-width)); column-gap: 72px; }
+  .piece > * { grid-column: 2; }
+}
+
+.piece p, .note p { margin: 0 0 1.1em; }
+.piece ul, .note ul { margin: 0 0 1.2em; padding-left: 1.2em; }
+.piece li, .note li { margin-bottom: 0.45em; }
+.piece li::marker, .note li::marker { color: var(--black); }
+
+/* Section headings: 6px black rule (the rule under the hero logo) + display caps */
+.section { margin-top: var(--space-16); }
+.section > h2 {
+  scroll-margin-top: 110px;
+  border-top: var(--rule);
+  padding-top: 14px;
+  margin-bottom: 20px;
+  font-size: clamp(26px, 2.4vw, 40px);
+  line-height: 1.02;
+  letter-spacing: var(--track-statement);
+  text-transform: uppercase;
+}
+.piece h3, .note h3 {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: var(--space-8) 0 var(--space-3);
+}
+.piece table { margin: var(--space-8) 0; }
+
+.intro-para {
+  font-size: 1.3125rem;
+  line-height: 1.5;
+  margin-top: 0;
+}
+.spec-line {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  padding: 12px 0;
+  border-top: 2px solid var(--black);
+  border-bottom: 2px solid var(--black);
+}
+
+/* Asides and pull quotes: grey slab with a black spine */
+.aside, .pull-quote {
+  background: var(--slab);
+  border-left: 6px solid var(--black);
+  padding: var(--space-4) var(--space-6);
+}
+.aside { font-size: 1.0625rem; }
+.pull-quote {
+  font-family: var(--font-pixel);
+  font-size: clamp(22px, 2vw, 30px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  margin: var(--space-8) 0 !important;
+}
+
+.credits {
+  margin-top: var(--space-12) !important;
+  padding-top: var(--space-3);
+  border-top: 2px solid var(--black);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+/* Ultron: timeline */
+.timeline { margin: var(--space-8) 0; border-top: 2px solid var(--black); }
+.timeline-entry {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  gap: var(--space-6);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--line);
+}
+.timeline-entry dt {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.timeline-entry dd { margin: 0; }
+
+/* Ultron: agent log entries as black "redacted file" blocks */
+.log-entry {
+  margin: var(--space-8) 0;
+  padding: var(--space-6);
+  background: var(--black);
+  color: #fff;
+}
+.note .log-entry h3 {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  letter-spacing: var(--track-statement);
+  color: var(--gold);
+}
+.log-string {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  padding: var(--space-2) var(--space-3);
+  word-break: break-word;
+}
+.log-entry p:last-child { margin-bottom: 0; }
+
+/* Hackerman: concept blocks and code */
+.concept {
+  margin: var(--space-8) 0;
+  padding: var(--space-6);
+  background: var(--slab);
+  border-top: var(--rule);
+}
+.note .concept h3 {
+  margin-top: 0;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  letter-spacing: var(--track-statement);
+}
+.concept ul:last-child, .concept p:last-child { margin-bottom: 0; }
+.code-block {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  background: var(--black);
+  color: var(--gold);
+  padding: var(--space-2) var(--space-3);
+  margin: var(--space-2) 0 !important;
+}
+
+@media (max-width: 639px) {
+  .piece, .note { padding-top: var(--space-12); }
+  .section { margin-top: var(--space-12); }
+  .timeline-entry { grid-template-columns: 1fr; gap: var(--space-1); }
+  .piece table { display: block; overflow-x: auto; }
+}

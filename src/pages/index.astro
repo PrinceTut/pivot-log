@@ -1,654 +1,388 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import GlassPill from '../components/GlassPill.astro';
+import StarBadge from '../components/StarBadge.astro';
 import { withBase } from '../utils/url';
-import Button from '../components/Button.astro';
-import type { ResearchMeta } from '../types';
+import { REPO_URL } from '../config';
 
-// Real data — same self-updating glob mechanism as the /projects and
-// /scratchnotes index pages. Homepage teasers are never hand-written copy.
-const projectModules = import.meta.glob<{ meta: ResearchMeta }>('./projects/*.astro', {
-  eager: true,
-});
-const projects = Object.entries(projectModules)
-  .filter(([path]) => !path.endsWith('/index.astro'))
-  .map(([, mod]) => mod.meta)
-  .filter(Boolean)
-  .sort((a, b) => b.date.localeCompare(a.date))
-  .slice(0, 2);
+// Statements exactly as written in the Figma file (TEXT nodes 31:17, 31:20, 31:23).
+const statements = [
+  'Most of what I build starts as scattered notes and half-formed questions.',
+  'Patterns emerge once I start tracing how the pieces actually connect.',
+  "What's left is a specific, testable claim; not a vibe.",
+];
 
-const noteModules = import.meta.glob<{ meta: ResearchMeta }>('./scratchnotes/*.astro', {
-  eager: true,
-});
-const notes = Object.entries(noteModules)
-  .filter(([path]) => !path.endsWith('/index.astro'))
-  .map(([, mod]) => mod.meta)
-  .filter(Boolean)
-  .sort((a, b) => b.date.localeCompare(a.date))
-  .slice(0, 1);
+// Network graph for the grey slot (the previously approved sparse -> structure -> resolved
+// visual), re-projected from its old 400x300 space onto the slot's 1119x567 proportions.
+const X = (x: number) => 60 + x * 2.6;
+const Y = (y: number) => 30 + y * 1.7;
+const structureEdges = [[30,60,90,40],[90,40,160,55],[160,55,230,40],[230,40,300,30],[40,140,110,260],
+  [200,220,280,190],[280,190,350,220],[110,260,200,220],[30,60,40,140],[170,130,200,220]];
+const pathPoints = [[55,235],[120,190],[170,130],[245,100],[310,65],[355,50]];
+const contextNodes = [[30,60],[90,40],[160,55],[230,40],[300,30],[370,90],[40,140],[110,260],[200,220],[280,190],[350,220],[200,270]];
+const pathEdges = pathPoints.slice(1).map((p, i) => [...pathPoints[i], ...p]);
 
-// Small project icons — each one abstracts that specific project's own
-// real centerpiece rather than a generic symbol. The RAG piece's icon is
-// a simplified version of its actual chunk × retrieval grid (same shape
-// as the Matrix component on the piece itself), with its single most
-// significant real result highlighted: Contextual chunking + Hybrid
-// search, +5.14, the largest gain and the most statistically significant
-// finding in the whole piece. Future projects get their own icon in the
-// same visual language (small square grid, one emphasized cell,
-// monochrome) derived from whatever their own real centerpiece is —
-// until then they fall back to the plain dashed placeholder box.
-const projectIcons: Record<string, { rows: number; cols: number; highlight: [number, number] }> = {
-  'rag-chunking-and-retrieval': { rows: 5, cols: 4, highlight: [4, 0] },
-};
-
-function iconCells(icon: { rows: number; cols: number; highlight: [number, number] }) {
-  const cellSize = 16;
-  const gap = 4;
-  const totalW = icon.cols * cellSize + (icon.cols - 1) * gap;
-  const totalH = icon.rows * cellSize + (icon.rows - 1) * gap;
-  const offsetX = (100 - totalW) / 2;
-  const offsetY = (100 - totalH) / 2;
-  const cells: { x: number; y: number; highlight: boolean }[] = [];
-  for (let r = 0; r < icon.rows; r++) {
-    for (let c = 0; c < icon.cols; c++) {
-      cells.push({
-        x: offsetX + c * (cellSize + gap),
-        y: offsetY + r * (cellSize + gap),
-        highlight: icon.highlight[0] === r && icon.highlight[1] === c,
-      });
-    }
-  }
-  return { cells, cellSize };
-}
+const heroSub = 'Independent projects and write-ups breaking down the LLM space and its components';
 ---
 
-<BaseLayout
-  title="Pivot Log"
-  description="Independent research and writing on how systems actually behave."
->
-  <div class="home">
-    <section class="hero">
-      <h1>Keeping up with the Frontier</h1>
-      <p class="sub">Independent projects and write-ups breaking down the LLM space and its components.</p>
-      <Button href={withBase('/projects')}>Explore the projects</Button>
-    </section>
+<BaseLayout title="Pivot Log" description="Independent projects and write-ups breaking down the LLM space and its components." nav={false}>
+  <!-- HERO: Figma frame 31:3, rectangle 1920x1171 #f2cd53 -->
+  <div class="cq">
+    <section class="hero" aria-labelledby="hero-title">
+      <h1 id="hero-title" class="sr-only">Keeping up with the Frontier</h1>
 
-    <section class="statement" id="statement-section">
-      <h2 class="statement-heading">A REPOSITORY OF ALL MY TECH PERSPECTIVES.</h2>
-      <div class="statement-grid">
-        <div class="statement-list">
-          <div class="statement-row" data-row-index="0">
-            <span class="num">01</span>
-            <span class="statement-text draft-text">Most of what I build starts as scattered notes and half-formed questions.</span>
-          </div>
-          <div class="statement-row" data-row-index="1">
-            <span class="num">02</span>
-            <span class="statement-text draft-text">Patterns emerge once I start tracing how the pieces actually connect.</span>
-          </div>
-          <div class="statement-row" data-row-index="2">
-            <span class="num">03</span>
-            <span class="statement-text draft-text">What's left is a specific, testable claim — not a vibe.</span>
-          </div>
-        </div>
-        <div class="statement-visual-pin">
-          <div class="statement-visual" id="scroll-visual" data-active-state="0">
-            <svg viewBox="0 0 400 300" class="graph-svg" aria-hidden="true">
-              <!-- "Structure" edges — partial connections, de-emphasized once the
-                   resolved path appears in state 2. Hand-placed, not generated,
-                   for a deliberate composition rather than random scatter. -->
-              <g class="graph-edge structure">
-                <line x1="30" y1="60" x2="90" y2="40" />
-                <line x1="90" y1="40" x2="160" y2="55" />
-                <line x1="160" y1="55" x2="230" y2="40" />
-                <line x1="230" y1="40" x2="300" y2="30" />
-                <line x1="40" y1="140" x2="110" y2="260" />
-                <line x1="200" y1="220" x2="280" y2="190" />
-                <line x1="280" y1="190" x2="350" y2="220" />
-                <line x1="110" y1="260" x2="200" y2="220" />
-                <line x1="30" y1="60" x2="40" y2="140" />
-                <line x1="170" y1="130" x2="200" y2="220" />
-              </g>
-              <!-- The resolved path — one clear route through the network,
-                   full weight only in the final state. -->
-              <g class="graph-edge path-edge">
-                <line x1="55" y1="235" x2="120" y2="190" />
-                <line x1="120" y1="190" x2="170" y2="130" />
-                <line x1="170" y1="130" x2="245" y2="100" />
-                <line x1="245" y1="100" x2="310" y2="65" />
-                <line x1="310" y1="65" x2="355" y2="50" />
-              </g>
-              <!-- Context nodes -->
-              <g class="graph-node context">
-                <circle cx="30" cy="60" r="3" />
-                <circle cx="90" cy="40" r="3" />
-                <circle cx="160" cy="55" r="3" />
-                <circle cx="230" cy="40" r="3" />
-                <circle cx="300" cy="30" r="3" />
-                <circle cx="370" cy="90" r="3" />
-                <circle cx="40" cy="140" r="3" />
-                <circle cx="110" cy="260" r="3" />
-                <circle cx="200" cy="220" r="3" />
-                <circle cx="280" cy="190" r="3" />
-                <circle cx="350" cy="220" r="3" />
-                <circle cx="200" cy="270" r="3" />
-              </g>
-              <!-- Path nodes — the resolved route -->
-              <g class="graph-node path-node">
-                <circle cx="55" cy="235" r="4" />
-                <circle cx="120" cy="190" r="4" />
-                <circle cx="170" cy="130" r="4" />
-                <circle cx="245" cy="100" r="4" />
-                <circle cx="310" cy="65" r="4" />
-                <circle cx="355" cy="50" r="4" />
-              </g>
-            </svg>
-          </div>
-        </div>
+      <div class="hero__words" aria-hidden="true">
+        <span class="w" style="--x:21; --y:37">KEEPING</span>
+        <span class="w w--r" style="--y:37">UP</span>
+        <span class="w" style="--x:21; --y:320">WI</span>
+        <span class="w w--r" style="--y:320">TH</span>
+        <span class="w" style="--x:21; --y:603">TH</span>
+        <span class="w w--r" style="--y:603">E</span>
+        <span class="w" style="--x:21; --y:886">FRONTIER</span>
       </div>
+      <p class="hero__mobile-title" aria-hidden="true">Keeping up with the frontier</p>
+
+      <img class="hero__logo" src={withBase('/logo.webp')} alt="Pivot Log" width="729" height="402" fetchpriority="high" />
+      <div class="hero__rule"></div>
+      <p class="hero__sub">{heroSub}<span class="cursor" aria-hidden="true">|</span></p>
+
+      <nav class="hero__pills" aria-label="Main">
+        <GlassPill href={withBase('/projects')} label="Projects" size="lg" />
+        <GlassPill href={withBase('/scratchnotes')} label="Scratchnotes" size="lg" />
+        <GlassPill href={REPO_URL} label="Git Repo" size="lg" external />
+      </nav>
+
+      <StarBadge class="hero__star" />
     </section>
+  </div>
 
-    <section class="teaser">
-      <p class="kicker">Projects</p>
-      <h2>My projects.</h2>
-      <p class="teaser-intro">
-        Exercises in building and breaking systems, to understand the
-        mechanisms behind models, pipelines, and agents.
-      </p>
+  <!-- SLOT: Figma "Rectangle 7" 1119x567 #d9d9d9 (placeholder), filled with the network graph -->
+  <div class="cq">
+    <section class="slot" aria-label="From scattered notes to a testable claim">
+      <figure class="slab">
+        <svg class="graph" viewBox="0 0 1119 567" aria-hidden="true">
+          <g class="g-structure">{structureEdges.map(([a,b,c,d]) => <line x1={X(a)} y1={Y(b)} x2={X(c)} y2={Y(d)} />)}</g>
+          <g class="g-path">{pathEdges.map(([a,b,c,d]) => <line x1={X(a)} y1={Y(b)} x2={X(c)} y2={Y(d)} />)}</g>
+          <g class="g-context">{contextNodes.map(([a,b]) => <circle cx={X(a)} cy={Y(b)} r="7" />)}</g>
+          <g class="g-pathnodes">{pathPoints.map(([a,b]) => <circle cx={X(a)} cy={Y(b)} r="9" />)}</g>
+        </svg>
+        <figcaption class="slab__labels">
+          <span class="lbl lbl--a">01 Notes</span>
+          <span class="lbl lbl--b">02 Structure</span>
+          <span class="lbl lbl--c">03 Claim</span>
+        </figcaption>
+      </figure>
+    </section>
+  </div>
 
-      <div class="teaser-list">
-        {projects.map((p, i) => {
-          const icon = projectIcons[p.slug];
-          const grid = icon ? iconCells(icon) : null;
-          return (
-            <a class="teaser-row" href={withBase(`/projects/${p.slug}`)}>
-              <div class={`row-visual ${icon ? 'has-icon' : ''}`} data-reveal>
-                {grid ? (
-                  <svg viewBox="0 0 100 100" class="icon-svg" aria-hidden="true">
-                    {grid.cells.map((cell) => (
-                      <rect
-                        x={cell.x}
-                        y={cell.y}
-                        width={grid.cellSize}
-                        height={grid.cellSize}
-                        class={`icon-cell ${cell.highlight ? 'highlight' : ''}`}
-                      />
-                    ))}
-                  </svg>
-                ) : (
-                  <>Illustration<br />placeholder</>
-                )}
-              </div>
-              <span class="row-num">{String(i + 1).padStart(2, '0')}</span>
-              <span class="row-body">
-                <span class="row-title">{p.title}</span>
-                <span class="row-dek">{p.dek}</span>
-              </span>
-              {p.stats && p.stats.length > 0 && (
-                <span class="row-stat">
-                  <span class="row-stat-value">{p.stats[p.stats.length - 1].value}</span>
-                  <span class="row-stat-label">{p.stats[p.stats.length - 1].label}</span>
-                </span>
-              )}
-            </a>
-          );
-        })}
+  <!-- STATEMENT: Figma text node at (55,1814), 128px, with redaction bars and the prism -->
+  <div class="cq">
+    <section class="st" aria-labelledby="st-title">
+      <h2 id="st-title" class="sr-only">A repository of all my tech perspectives</h2>
+
+      <div class="st__desk" aria-hidden="true">
+        <span class="sw" style="--x:55; --y:0">A</span>
+        <span class="bar" style="--x:171; --y:22; --w:687; --h:90"></span>
+        <span class="sw sw--r" style="--r:290; --y:0">REPOSITORY</span>
+        <StarBadge fill="white" class="st__star" />
+        <span class="sw sw--r" style="--r:78; --y:0">F</span>
+        <span class="bar" style="--x:1659; --y:130; --w:182; --h:138"></span>
+        <span class="sw" style="--x:55; --y:264">ALL MY</span>
+        <span class="bar" style="--x:512; --y:286; --w:234; --h:90"></span>
+        <span class="sw sw--r" style="--r:826; --y:264">TECH</span>
+        <span class="bar" style="--x:1108; --y:286; --w:466; --h:90"></span>
+        <span class="sw" style="--x:55; --y:396">PERSPECTIVES</span>
+        <span class="bar" style="--x:1176; --y:414; --w:313; --h:90"></span>
       </div>
 
-      <Button href={withBase('/projects')}>Explore the projects</Button>
-    </section>
-
-    <section class="teaser">
-      <p class="kicker">Scratchnotes</p>
-      <h2>Scratchnotes.</h2>
-      <p class="teaser-intro">
-        A place to write about things I find important — faster and
-        looser than a full project.
-      </p>
-
-      <div class="notes-card-wrap">
-        {notes.map((n) => (
-          <a class="notes-card" href={withBase(`/scratchnotes/${n.slug}`)}>
-            <span class="notes-card-title">{n.title}</span>
-            <span class="notes-card-dek">{n.dek}</span>
-            <span class="notes-card-meta">{n.date} &middot; &rarr;</span>
-          </a>
-        ))}
+      <div class="prism-stage">
+        <ul class="prism">
+          {statements.map((s, i) => <li class="face" style={`--i:${i}`}>{s}</li>)}
+        </ul>
       </div>
 
-      <Button href={withBase('/scratchnotes')}>Read Scratchnotes</Button>
+      <p class="st__mono">Independent research and writing on how systems actually behave.</p>
+
+      <nav class="st__pills" aria-label="Explore">
+        <GlassPill href={REPO_URL} label="Git Repo" size="lg" external />
+        <GlassPill href={withBase('/projects')} label="Projects" size="lg" />
+        <GlassPill href={withBase('/scratchnotes')} label="Scratchnotes" size="lg" />
+      </nav>
+
+      <!-- Mobile composition (below 900px): same content, reflowed -->
+      <p class="st__mobile" aria-hidden="true">A <span class="ibar" style="--w:2.4em"></span> Repository of all my <span class="ibar" style="--w:1.2em"></span> tech <span class="ibar" style="--w:1.8em"></span> perspectives</p>
     </section>
   </div>
 </BaseLayout>
 
 <style>
-  .home {
-    width: 100%;
-  }
-
-  /* --- Hero: centered, full-bleed padding --- */
+  /* ---------------- HERO ---------------- */
   .hero {
-    padding: var(--space-24) var(--space-16) var(--space-16);
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  .hero h1 {
-    font-family: var(--font-sans);
-    font-size: 4.5rem;
-    font-weight: 700;
-    line-height: 1.05;
-    letter-spacing: -0.01em;
-    color: var(--ink);
-    max-width: 50rem;
-    margin-bottom: var(--space-6);
-  }
-  .sub {
-    font-family: var(--font-serif);
-    font-size: var(--size-dek);
-    color: var(--ink-soft);
-    max-width: 34rem;
-    margin-bottom: var(--space-8);
-  }
-
-  /* --- Statement section: full-bleed, huge type, scroll-linked visual --- */
-  .statement {
-    padding: var(--space-24) var(--space-16);
-    border-top: var(--border);
-  }
-
-  .statement-heading {
-    font-family: var(--font-sans);
-    font-weight: 700;
-    font-size: 5.5rem;
-    line-height: 1.02;
-    letter-spacing: -0.01em;
-    max-width: 64rem;
-    margin: 0 0 var(--space-16) 0;
-  }
-
-  .statement-grid {
-    display: grid;
-    grid-template-columns: 1.1fr 1fr;
-    gap: var(--space-16);
-    align-items: start;
-  }
-
-  .statement-list {
-    border-top: var(--border);
-  }
-  .statement-row {
-    display: flex;
-    gap: var(--space-8);
-    align-items: center;
-    min-height: 40vh;
-    padding: var(--space-6) 0;
-    border-bottom: var(--border);
-  }
-  .statement-row .num {
-    font-family: var(--font-mono);
-    font-size: 0.8125rem;
-    color: var(--ink-soft);
-    min-width: 2rem;
-  }
-  .statement-text {
-    font-family: var(--font-serif);
-    font-size: 1.25rem;
-  }
-  .draft-text {
-    color: var(--ink-soft);
-    font-style: italic;
-  }
-
-  .statement-visual-pin {
-    position: sticky;
-    top: 130px;
-  }
-  .statement-visual {
     position: relative;
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    background: var(--paper-2);
-    border: var(--border);
+    height: calc(1171 * var(--u));
+    background: var(--gold);
+    overflow: hidden;
   }
-  .graph-svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
-
-  .graph-node circle {
-    fill: var(--ink-soft);
-  }
-  .graph-edge line {
-    stroke: var(--ink-soft);
-    stroke-width: 1;
-    fill: none;
-  }
-  .graph-edge.path-edge line {
-    stroke: var(--ink);
-  }
-
-  .graph-node,
-  .graph-edge {
-    opacity: 0;
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .graph-node,
-    .graph-edge,
-    .graph-node circle,
-    .graph-edge line {
-      transition: opacity var(--transition-reveal), stroke-width var(--transition-reveal),
-        r var(--transition-reveal), fill var(--transition-reveal);
-    }
-  }
-
-  /* State 0 — sparse: faint, disconnected nodes, no edges at all. */
-  .statement-visual[data-active-state="0"] .graph-node {
-    opacity: 0.45;
-  }
-  .statement-visual[data-active-state="0"] .graph-edge {
-    opacity: 0;
-  }
-
-  /* State 1 — structure emerges: partial connections, nodes settle in. */
-  .statement-visual[data-active-state="1"] .graph-node {
-    opacity: 0.75;
-  }
-  .statement-visual[data-active-state="1"] .graph-edge.structure {
-    opacity: 0.5;
-  }
-  .statement-visual[data-active-state="1"] .graph-edge.path-edge {
-    opacity: 0;
-  }
-
-  /* State 2 — resolved: one clear route stands out, everything else recedes. */
-  .statement-visual[data-active-state="2"] .graph-node.context {
-    opacity: 0.25;
-  }
-  .statement-visual[data-active-state="2"] .graph-node.path-node {
-    opacity: 1;
-  }
-  .statement-visual[data-active-state="2"] .graph-node.path-node circle {
-    fill: var(--ink);
-    r: 5;
-  }
-  .statement-visual[data-active-state="2"] .graph-edge.structure {
-    opacity: 0.12;
-  }
-  .statement-visual[data-active-state="2"] .graph-edge.path-edge {
-    opacity: 1;
-  }
-  .statement-visual[data-active-state="2"] .graph-edge.path-edge line {
-    stroke-width: 2;
-  }
-
-  @media (max-width: 899px) {
-    .statement-grid {
-      grid-template-columns: 1fr;
-    }
-    .statement-visual-pin {
-      display: none;
-    }
-    .statement-row {
-      min-height: 0;
-    }
-  }
-
-  /* --- Teaser sections (Projects / Scratchnotes) --- */
-  .teaser {
-    padding: var(--space-24) var(--space-16);
-    border-top: var(--border);
-  }
-  .kicker {
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--ink-soft);
-    margin-bottom: var(--space-3);
-  }
-  .teaser h2 {
-    font-family: var(--font-sans);
+  .w {
+    position: absolute;
+    left: calc(var(--x) * var(--u));
+    top: calc(var(--y) * var(--u));
+    font-family: var(--font-display);
     font-weight: 700;
-    letter-spacing: -0.01em;
-    font-size: 3.5rem;
-    margin-bottom: var(--space-4);
-  }
-  .teaser-intro {
-    font-family: var(--font-serif);
-    font-size: var(--size-dek);
-    color: var(--ink-soft);
-    max-width: 40rem;
-    margin-bottom: var(--space-12);
-  }
-
-  .teaser-list {
-    max-width: 64rem;
-    border-top: var(--border);
-    margin-bottom: var(--space-8);
-  }
-  .teaser-row {
-    display: grid;
-    grid-template-columns: 6rem 3rem 1fr auto;
-    gap: var(--space-8);
-    align-items: center;
-    padding: var(--space-8) 0;
-    border-bottom: var(--border);
-    text-decoration: none;
-    color: inherit;
-  }
-  .row-visual {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    background: var(--paper-2);
-    border: 1px dashed var(--line);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-family: var(--font-sans);
-    font-size: 0.5625rem;
-    color: var(--ink-soft);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    line-height: 1.4;
-    padding: var(--space-1);
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  /* Once a project has a real icon (see projectIcons below), it gets the
-     site's normal solid hairline border instead of the dashed
-     "placeholder" look — projects without one yet keep the dashed box
-     until their own icon exists. */
-  .row-visual.has-icon {
-    border: var(--border);
-    padding: var(--space-3);
-  }
-  .icon-svg {
-    width: 100%;
-    height: 100%;
-  }
-  .icon-cell {
-    fill: none;
-    stroke: var(--ink-soft);
-    stroke-width: 1.5;
-  }
-  .icon-cell.highlight {
-    fill: var(--ink);
-    stroke: var(--ink);
-  }
-  .row-visual.is-visible {
-    opacity: 1;
-    transform: none;
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .row-visual {
-      transition: opacity var(--transition-reveal), transform var(--transition-reveal);
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .row-visual {
-      opacity: 1;
-      transform: none;
-    }
-  }
-  .row-num {
-    font-family: var(--font-mono);
-    font-size: 0.8125rem;
-    color: var(--ink-soft);
-  }
-  .row-body {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-  }
-  .row-title {
-    font-family: var(--font-serif);
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--ink);
-    text-decoration: underline;
-    text-decoration-color: transparent;
-    text-underline-offset: 0.2em;
-  }
-  .teaser-row:hover .row-title {
-    text-decoration-color: var(--ink);
-  }
-  .row-dek {
-    font-family: var(--font-sans);
-    font-size: 0.9375rem;
-    color: var(--ink-soft);
-    max-width: 34rem;
-  }
-  .row-stat {
-    text-align: right;
+    font-size: calc(300 * var(--u));
+    line-height: calc(242 * var(--u));
+    letter-spacing: var(--track-display);
     white-space: nowrap;
   }
-  .row-stat-value {
-    display: block;
-    font-family: var(--font-sans);
-    font-size: 2rem;
-    font-weight: 600;
-    color: var(--ink);
+  .w--r { left: auto; right: calc(54 * var(--u)); }
+  .hero__mobile-title { display: none; }
+  .hero__logo {
+    position: absolute;
+    left: calc(596 * var(--u));
+    top: calc(262 * var(--u));
+    width: calc(729 * var(--u));
+    height: auto;
   }
-  .row-stat-label {
-    display: block;
-    font-family: var(--font-sans);
-    font-size: 0.75rem;
-    color: var(--ink-soft);
-    max-width: 10rem;
+  .hero__rule {
+    position: absolute;
+    left: calc(649 * var(--u));
+    top: calc(632 * var(--u));
+    width: calc(622 * var(--u));
+    height: calc(6 * var(--u));
+    background: var(--black);
+  }
+  .hero__sub {
+    position: absolute;
+    left: calc(549 * var(--u));
+    top: calc(654 * var(--u));
+    width: calc(822 * var(--u));
+    margin: 0;
+    font-family: var(--font-pixel);
+    font-size: calc(47 * var(--u));
+    line-height: calc(37 * var(--u));
+    letter-spacing: -0.042em;
+    text-align: justify;
+    text-align-last: left;
+  }
+  .hero__pills {
+    position: absolute;
+    left: calc(556 * var(--u));
+    top: calc(794 * var(--u));
+    display: flex;
+    gap: calc(30 * var(--u));
+  }
+  .hero :global(.hero__star) {
+    position: absolute;
+    left: calc(1637 * var(--u));
+    top: calc(888 * var(--u));
+    width: calc(242 * var(--u));
+    height: calc(242 * var(--u));
   }
 
-  .notes-card-wrap {
-    max-width: 36rem;
-    margin-bottom: var(--space-8);
+  /* ---------------- SLOT (graph) ---------------- */
+  .slot { padding: calc(43 * var(--u)) 0 0 calc(36 * var(--u)); }
+  .slab {
+    position: relative;
+    margin: 0;
+    width: calc(1119 * var(--u));
+    height: calc(567 * var(--u));
+    background: var(--slab);
   }
-  .notes-card {
+  .graph { width: 100%; height: 100%; display: block; }
+  .graph line { stroke: var(--black); fill: none; }
+  .g-structure line { stroke-width: 2; }
+  .g-path line { stroke-width: 5; }
+  .graph circle { fill: var(--black); }
+  .slab__labels {
+    position: absolute;
+    left: calc(28 * var(--u));
+    bottom: calc(22 * var(--u));
+    display: flex;
+    gap: calc(28 * var(--u));
+    margin: 0;
+    font-family: var(--font-mono);
+    font-style: normal;
+    font-weight: 700;
+    font-size: max(11px, calc(17 * var(--u)));
+    text-transform: uppercase;
+    color: var(--black);
+  }
+  .lbl { opacity: 0.35; }
+
+  /* Graph states follow the prism clock (7.92s): face 1 front at 0%, face 2 at 33%, face 3 at 67% */
+  .g-structure { opacity: 0; } .g-path { opacity: 0; }
+  .g-context, .g-pathnodes { opacity: 0.45; }
+  @media (prefers-reduced-motion: no-preference) {
+    .g-structure { animation: g-structure 7.92s linear infinite; }
+    .g-path { animation: g-path 7.92s linear infinite; }
+    .g-context { animation: g-context 7.92s linear infinite; }
+    .g-pathnodes { animation: g-pathnodes 7.92s linear infinite; }
+    .lbl--a { animation: lbl-a 7.92s linear infinite; }
+    .lbl--b { animation: lbl-b 7.92s linear infinite; }
+    .lbl--c { animation: lbl-c 7.92s linear infinite; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    /* No motion: show the resolved end state */
+    .g-structure { opacity: 0.15; } .g-path { opacity: 1; } .g-context { opacity: 0.3; } .g-pathnodes { opacity: 1; }
+    .lbl--c { opacity: 1; }
+  }
+  @keyframes g-structure { 0%,13.7% {opacity:0} 19.7%,47% {opacity:.55} 53%,80.3% {opacity:.15} 86.3%,100% {opacity:0} }
+  @keyframes g-path      { 0%,47% {opacity:0} 53%,80.3% {opacity:1} 86.3%,100% {opacity:0} }
+  @keyframes g-context   { 0%,13.7% {opacity:.45} 19.7%,47% {opacity:.8} 53%,80.3% {opacity:.3} 86.3%,100% {opacity:.45} }
+  @keyframes g-pathnodes { 0%,13.7% {opacity:.45} 19.7%,47% {opacity:.8} 53%,80.3% {opacity:1} 86.3%,100% {opacity:.45} }
+  @keyframes lbl-a { 0%,13.7% {opacity:1} 19.7%,80.3% {opacity:.35} 86.3%,100% {opacity:1} }
+  @keyframes lbl-b { 0%,13.7% {opacity:.35} 19.7%,47% {opacity:1} 53%,100% {opacity:.35} }
+  @keyframes lbl-c { 0%,47% {opacity:.35} 53%,80.3% {opacity:1} 86.3%,100% {opacity:.35} }
+
+  /* ---------------- STATEMENT ---------------- */
+  .st {
+    position: relative;
+    height: calc(560 * var(--u));
+    margin-top: calc(33 * var(--u));
+  }
+  .sw, .bar {
+    position: absolute;
+    left: calc(var(--x) * var(--u));
+    top: calc(var(--y) * var(--u));
+  }
+  .sw {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: calc(128 * var(--u));
+    line-height: calc(132 * var(--u));
+    letter-spacing: var(--track-statement);
+    white-space: nowrap;
+  }
+  .sw--r { left: auto; right: calc(var(--r) * var(--u)); }
+  .bar {
+    width: calc(var(--w) * var(--u));
+    height: calc(var(--h) * var(--u));
+    background: var(--black);
+  }
+  .st :global(.st__star) {
+    position: absolute;
+    left: calc(1686 * var(--u));
+    top: calc(22 * var(--u));
+    width: calc(90 * var(--u));
+    height: calc(90 * var(--u));
+  }
+
+  /* Prism: three panels on a vertical axis at x=805, one turn per 7.92s (GIF: 396 frames x 20ms) */
+  .prism-stage {
+    position: absolute;
+    left: calc(680 * var(--u));
+    top: calc(128 * var(--u));
+    width: calc(400 * var(--u));
+    height: calc(114 * var(--u));
+    perspective: calc(2400 * var(--u));
+  }
+  .prism {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    transform-style: preserve-3d;
+    transform: translateZ(calc(-600 * var(--u)));
+  }
+  .face {
+    position: absolute;
+    inset: 0;
+    transform: rotateY(calc(var(--i) * 120deg)) translateZ(calc(600 * var(--u)));
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: calc(26 * var(--u));
+    line-height: calc(36 * var(--u));
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    text-align: justify;
+    text-align-last: left;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .prism { animation: prism-spin 7.92s linear infinite; }
+  }
+  @keyframes prism-spin {
+    from { transform: translateZ(calc(-600 * var(--u))) rotateY(0deg); }
+    to   { transform: translateZ(calc(-600 * var(--u))) rotateY(-360deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    /* Flatten to three readable columns */
+    .prism-stage { left: calc(160 * var(--u)); width: calc(1440 * var(--u)); perspective: none; }
+    .prism { display: flex; gap: calc(60 * var(--u)); transform: none; }
+    .face { position: static; transform: none; flex: 1; }
+  }
+
+  .st__mono {
+    position: absolute;
+    left: calc(961 * var(--u));
+    top: calc(413 * var(--u));
+    width: calc(194 * var(--u));
+    margin: 0;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: calc(17 * var(--u));
+    line-height: calc(24 * var(--u));
+    letter-spacing: -0.04em;
+    text-align: justify;
+    text-align-last: left;
+  }
+  .st__pills {
+    position: absolute;
+    right: calc(79 * var(--u));
+    top: calc(305 * var(--u));
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
-    padding: var(--space-6) 0;
-    border-top: var(--border);
-    border-bottom: var(--border);
-    text-decoration: none;
-    color: inherit;
+    align-items: flex-end;
+    gap: calc(10 * var(--u));
   }
-  .notes-card-title {
-    font-family: var(--font-serif);
-    font-size: 1.375rem;
-    font-weight: 600;
-    color: var(--ink);
-  }
-  .notes-card-dek {
-    font-family: var(--font-sans);
-    font-size: 0.9375rem;
-    color: var(--ink-soft);
-  }
-  .notes-card-meta {
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    color: var(--ink-soft);
-  }
+  .st__mobile { display: none; }
 
-  @media (max-width: 639px) {
-    .hero, .statement, .teaser {
-      padding-left: var(--space-4);
-      padding-right: var(--space-4);
+  /* ---------------- MOBILE (below 900px): reflow instead of shrinking the poster ---------------- */
+  @media (max-width: 899px) {
+    .hero { height: auto; padding: 28px var(--gutter) 40px; }
+    .hero__words { display: none; }
+    .hero__mobile-title {
+      display: block;
+      margin: 0 0 20px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 17vw;
+      line-height: 0.84;
+      letter-spacing: var(--track-display);
+      text-transform: uppercase;
     }
-    .hero h1, .statement-heading, .teaser h2 {
-      font-size: 2.25rem;
+    .hero__logo, .hero__rule, .hero__sub, .hero__pills { position: static; }
+    .hero__logo { width: min(78%, 420px); display: block; margin: 0 auto; }
+    .hero__rule { width: min(84%, 460px); height: 5px; margin: 6px auto 12px; }
+    .hero__sub { width: auto; font-size: 22px; line-height: 20px; }
+    .hero__pills { flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .hero__pills :global(.pill--lg) { --h: 40px; }
+    .hero :global(.hero__star) { position: static; display: block; width: 64px; height: 64px; margin: 18px 0 0 auto; }
+
+    .slot { padding: 20px var(--gutter) 0; }
+    .slab { width: 100%; height: auto; aspect-ratio: 1119 / 567; }
+    .slab__labels { font-size: 10px; gap: 12px; left: 10px; bottom: 8px; }
+
+    .st { height: auto; margin-top: 0; padding: 32px var(--gutter) 8px; display: flex; flex-direction: column; }
+    .st__mobile { order: -1; }
+    .st__desk, .st :global(.st__star) { display: none; }
+    .st__mobile {
+      display: block;
+      margin: 0 0 24px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 11vw;
+      line-height: 0.98;
+      letter-spacing: var(--track-statement);
+      text-transform: uppercase;
     }
-    .teaser-row {
-      grid-template-columns: 1fr;
-      gap: var(--space-2);
-    }
-    .row-visual {
-      display: none;
-    }
-    .row-stat {
-      text-align: left;
-    }
+    .ibar { display: inline-block; width: var(--w); height: 0.7em; background: var(--black); vertical-align: -0.02em; }
+    .prism-stage { position: static; width: auto; height: auto; perspective: none; }
+    .prism { display: grid; gap: 12px; transform: none; animation: none; }
+    .face { position: static; transform: none; font-size: 17px; line-height: 23px; padding: 12px 0; border-top: 2px solid var(--black); }
+    .st__mono { position: static; width: auto; font-size: 14px; line-height: 20px; margin: 20px 0; }
+    .st__pills { position: static; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .st__pills :global(.pill--lg) { --h: 40px; }
   }
 </style>
-
-<script>
-  // The pinned visual panel's stick-while-scrolling behavior is handled
-  // natively by CSS `position: sticky` — no JS needed for that part.
-  // This script's only job is tracking which numbered row is currently
-  // near the vertical center of the viewport, and crossfading the
-  // matching placeholder label into view (real illustrations will swap
-  // in here once they exist, same mechanism).
-  function setupStatementScroll() {
-    const rows = document.querySelectorAll<HTMLElement>('.statement-row[data-row-index]');
-    const visual = document.getElementById('scroll-visual');
-    if (!rows.length || !visual) return;
-
-    // Note: unlike some other scroll effects on this site, this one still
-    // runs under prefers-reduced-motion — the graph's state is meaningful
-    // content (which row you're reading), not decorative motion. The CSS
-    // above already strips the smooth transition in that case, so the
-    // state still snaps correctly as you scroll, it just doesn't animate.
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          const index = entry.target.getAttribute('data-row-index');
-          if (index !== null) visual.setAttribute('data-active-state', index);
-        });
-      },
-      { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
-    );
-
-    rows.forEach((row) => observer.observe(row));
-  }
-
-  document.addEventListener('astro:page-load', setupStatementScroll);
-
-  // Per-project illustration placeholders on the homepage teaser: a
-  // simple trigger-once fade-in as each row scrolls into view (not a
-  // continuous crossfade like the statement section above — these are
-  // independent list items, not one shared narrative panel, so each
-  // just needs to appear once and stay).
-  function setupProjectVisualReveal() {
-    const visuals = document.querySelectorAll<HTMLElement>('.row-visual[data-reveal]');
-    if (!visuals.length) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.3 }
-    );
-
-    visuals.forEach((visual) => observer.observe(visual));
-  }
-
-  document.addEventListener('astro:page-load', setupProjectVisualReveal);
-</script>

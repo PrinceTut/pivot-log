@@ -21,37 +21,25 @@ const { stats } = Astro.props;
   .stat-strip {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-8);
-    margin: var(--space-8) 0;
-    padding: var(--space-6) 0;
-    border-top: var(--border);
-    border-bottom: var(--border);
+    gap: max(20px, calc(40 * var(--u, 1px))) max(28px, calc(90 * var(--u, 1px)));
+    margin: max(28px, calc(56 * var(--u, 1px))) 0 0;
+    padding-top: 16px;
+    border-top: var(--rule);
   }
-
-  .stat {
-    margin: 0;
-  }
-
+  .stat { margin: 0; }
   .value {
-    font-family: var(--font-sans);
-    font-size: var(--size-stat);
-    font-weight: 600;
-    color: var(--ink);
-    line-height: 1.1;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: max(34px, calc(96 * var(--u, 1px)));
+    line-height: 0.95;
+    letter-spacing: var(--track-statement);
   }
-
   .label {
-    margin: var(--space-1) 0 0 0;
-    font-family: var(--font-sans);
-    font-size: var(--size-stat-label);
+    margin: 6px 0 0;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.02em;
-    color: var(--ink-soft);
-  }
-
-  @media (max-width: 639px) {
-    .stat-strip {
-      gap: var(--space-6);
-    }
+    letter-spacing: 0.04em;
   }
 </style>

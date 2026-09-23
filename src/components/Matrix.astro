@@ -22,9 +22,9 @@ const { caption, columns, rows } = Astro.props;
 // (Reversed from the earlier continuous-heat-scale approach — user found
 // the solid color fills too visually loud.)
 function cellStyle(value: number) {
-  if (value > 0) return 'border-bottom: 2px solid var(--positive);';
-  if (value < 0) return 'border-bottom: 2px solid var(--negative);';
-  return 'border-bottom: 2px solid var(--line);';
+  if (value > 0) return 'border-bottom-color: var(--positive);';
+  if (value < 0) return 'border-bottom-color: var(--negative);';
+  return '';
 }
 function formatValue(value: number) {
   const sign = value > 0 ? '+' : '';
@@ -53,7 +53,7 @@ function formatValue(value: number) {
                 class="matrix-cell"
                 style={cellStyle(cell.value)}
                 data-note={cell.note}
-                data-title={`${row.label} + ${columns[ci]}`}
+                data-title={`${row.label} + ${columns[ci].replace(/^\+\s*/, '')}`}
                 data-value={formatValue(cell.value)}
                 aria-describedby="matrix-panel"
               >
@@ -73,95 +73,66 @@ function formatValue(value: number) {
 </div>
 
 <style>
-  .matrix-wrap {
-    max-width: var(--content-width-wide);
-    margin: var(--space-8) 0;
-  }
-
-  .matrix-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    width: 100%;
-  }
-
-  .matrix {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: var(--font-mono);
-    font-size: 0.9375rem;
-  }
-  .matrix caption {
-    font-family: var(--font-serif);
-  }
-  .matrix th,
-  .matrix td {
-    border: none;
-    padding: var(--space-1);
-    text-align: center;
-    white-space: nowrap;
-  }
+  .matrix-wrap { margin: var(--space-8) 0; }
+  .matrix-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+  .matrix { width: 100%; border-collapse: separate; border-spacing: 6px; font-family: var(--font-mono); }
+  .matrix caption { font-family: var(--font-body); margin-bottom: var(--space-2); }
+  .matrix th, .matrix td { border: none; padding: 0; text-align: center; white-space: nowrap; background: none; }
   .matrix thead th {
-    font-family: var(--font-sans);
-    font-size: 0.75rem;
+    color: var(--black);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.02em;
-    color: var(--ink-soft);
-    padding-bottom: var(--space-2);
+    letter-spacing: 0.04em;
+    padding-bottom: 4px;
   }
   .matrix tbody th {
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
     text-align: left;
-    color: var(--ink-soft);
-    padding-right: var(--space-4);
-    white-space: nowrap;
+    text-transform: uppercase;
+    padding-right: var(--space-3);
   }
-
   .matrix-cell {
+    width: 100%;
+    min-width: 4.75rem;
+    padding: 12px 10px;
     font-family: var(--font-mono);
     font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--ink);
-    border: none;
-    padding: var(--space-2) var(--space-3);
-    min-width: 4.5rem;
+    font-weight: 700;
+    color: var(--black);
+    background: var(--paper);
+    border: 2px solid var(--black);
+    border-bottom-width: 5px;
     cursor: pointer;
   }
-  .matrix-cell.active {
-    outline: 2px solid var(--ink);
-    outline-offset: -2px;
+  .matrix-cell:hover { background: var(--gold); }
+  .matrix-cell.active { background: var(--black); color: var(--gold); }
+  @media (prefers-reduced-motion: no-preference) {
+    .matrix-cell { transition: background-color var(--transition-fast), color var(--transition-fast); }
   }
-
   .matrix-panel {
-    margin-top: var(--space-4);
-    padding: var(--space-4);
-    background: var(--paper-2);
-    font-family: var(--font-sans);
-    font-size: 0.9375rem;
+    margin-top: var(--space-3);
+    padding: var(--space-4) var(--space-6);
+    background: var(--black);
+    color: #fff;
+    min-height: 5.5rem;
   }
-  .matrix-panel .hint {
-    color: var(--ink-soft);
-    margin: 0;
-    font-style: italic;
+  .matrix-panel .hint { color: #c9ccd0; margin: 0; font-family: var(--font-mono); font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .matrix-panel :global(.panel-title) {
+    margin: 0 0 var(--space-2);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--gold);
   }
-  .matrix-panel .panel-title {
-    font-weight: 600;
-    margin: 0 0 var(--space-2) 0;
-  }
-  .matrix-panel p {
-    margin: 0;
-  }
-
+  .matrix-panel :global(p) { margin: 0; }
   @media (max-width: 639px) {
-    .matrix-wrap {
-      margin: var(--space-6) calc(var(--space-4) * -1) var(--space-6);
-      padding: 0 var(--space-4);
-    }
-    .matrix-cell {
-      /* Comfortable touch target (~48px tall) — desktop keeps the more
-         compact sizing already reviewed, this is mobile-only. */
-      padding: var(--space-4) var(--space-3);
-    }
+    .matrix-cell { padding: 16px 10px; }
   }
 </style>
 

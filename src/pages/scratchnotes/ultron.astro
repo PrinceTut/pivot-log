@@ -1,5 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArticleHeader from '../../components/ArticleHeader.astro';
+import '../../styles/article.css';
 import { withBase } from '../../utils/url';
 import type { ResearchMeta } from '../../types';
 
@@ -13,11 +15,10 @@ export const meta: ResearchMeta = {
 };
 ---
 
-<BaseLayout title={meta.title} description={meta.dek}>
+<BaseLayout title={meta.title} description={meta.dek} nav="dark">
+  <ArticleHeader theme="dark" title={meta.title} backHref={withBase('/scratchnotes')} backLabel="Scratchnotes" meta={[meta.date]} tags={meta.tags} />
+
   <article class="note">
-    <a class="back" href={withBase('/scratchnotes')}>&larr; Scratchnotes</a>
-    <p class="date">{meta.date}</p>
-    <h1>{meta.title}</h1>
 
     <p>
       I decided that my first writeup should be surrounding the incident
@@ -353,89 +354,3 @@ export const meta: ResearchMeta = {
     </p>
   </article>
 </BaseLayout>
-
-<style>
-  .note {
-    max-width: var(--content-width);
-    margin: 0 auto;
-    padding: var(--space-8) var(--space-10);
-  }
-  .back {
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    text-decoration: none;
-    color: var(--ink-soft);
-  }
-  .date {
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    color: var(--ink-soft);
-    margin: var(--space-6) 0 var(--space-2);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  h1 {
-    margin-bottom: var(--space-6);
-  }
-
-  .pull-quote {
-    font-style: italic;
-    color: var(--ink-soft);
-    padding: var(--space-4) var(--space-6);
-    background: var(--paper-2);
-    border-left: 2px solid var(--line);
-  }
-
-  .timeline {
-    margin: var(--space-6) 0;
-    border-top: var(--border);
-  }
-  .timeline-entry {
-    display: grid;
-    grid-template-columns: 10rem 1fr;
-    gap: var(--space-6);
-    padding: var(--space-4) 0;
-    border-bottom: var(--border);
-  }
-  .timeline-entry dt {
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-size: 0.9375rem;
-  }
-  .timeline-entry dd {
-    margin: 0;
-    color: var(--ink-soft);
-  }
-
-  .log-entry {
-    margin: var(--space-8) 0;
-    padding: var(--space-4) var(--space-6);
-    background: var(--paper-2);
-  }
-  .log-entry h3 {
-    margin-bottom: var(--space-3);
-  }
-  .log-string {
-    font-family: var(--font-mono);
-    font-size: 0.875rem;
-    color: var(--ink);
-    background: var(--paper);
-    padding: var(--space-2) var(--space-3);
-    margin-bottom: var(--space-3);
-    word-break: break-word;
-    border: var(--border);
-  }
-  .log-entry p:last-child {
-    margin-bottom: 0;
-  }
-
-  @media (max-width: 639px) {
-    .note {
-      padding: var(--space-4);
-    }
-    .timeline-entry {
-      grid-template-columns: 1fr;
-      gap: var(--space-1);
-    }
-  }
-</style>

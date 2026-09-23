@@ -1,0 +1,150 @@
+---
+// Article masthead. Sizes are in Figma units (--u = 1px of the 1920 frame) with
+// pixel floors so nothing gets unreadably small on phones.
+// Slots: "dek" (verbatim dek text, set in the pixel serif), "after" (e.g. StatStrip).
+import StarBadge from './StarBadge.astro';
+
+interface Props {
+  theme?: 'gold' | 'dark';
+  title: string;
+  backHref: string;
+  backLabel: string;
+  meta?: string[];
+  tags?: string[];
+}
+const { theme = 'gold', title, backHref, backLabel, meta = [], tags = [] } = Astro.props;
+const hasDek = Astro.slots.has('dek');
+---
+
+<div class="cq">
+  <header class:list={['ah', `ah--${theme}`]}>
+    <a class="ah__back" href={backHref}>&larr; {backLabel}</a>
+    {tags.length > 0 && (
+      <p class="ah__tags">{tags.map((t) => <span>[{t}]</span>)}</p>
+    )}
+    {hasDek ? (
+      <>
+        <h1 class="ah__title">{title}</h1>
+        <div class="ah__row">
+          <p class="ah__dek"><slot name="dek" /><span class="cursor" aria-hidden="true">|</span></p>
+          <div class="ah__side">
+            <StarBadge class="ah__star" />
+            {meta.length > 0 && <p class="ah__meta">{meta.map((m) => <span>{m}</span>)}</p>}
+          </div>
+        </div>
+      </>
+    ) : (
+      <div class="ah__compact">
+        <h1 class="ah__title ah__title--poster">{title}</h1>
+        <div class="ah__side">
+          <StarBadge class="ah__star" />
+          {meta.length > 0 && <p class="ah__meta">{meta.map((m) => <span>{m}</span>)}</p>}
+        </div>
+      </div>
+    )}
+    <slot name="after" />
+  </header>
+</div>
+
+<style>
+  .ah {
+    padding: max(20px, calc(40 * var(--u))) var(--gutter) max(36px, calc(72 * var(--u)));
+  }
+  .ah--gold { background: var(--gold); color: var(--black); }
+  .ah--dark { background: var(--black); color: #fff; }
+
+  .ah__back {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: inherit;
+    margin-bottom: max(16px, calc(36 * var(--u)));
+  }
+  .ah__back:hover { text-decoration: underline; text-decoration-color: currentColor; }
+
+  .ah__tags {
+    display: flex;
+    gap: 12px;
+    margin: 0 0 12px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .ah__title {
+    max-width: calc(1810 * var(--u));
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: max(36px, calc(128 * var(--u)));
+    line-height: 0.92;
+    letter-spacing: var(--track-statement);
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .ah--dark .ah__title { color: var(--gold); }
+
+  /* No dek: poster-sized title with badge + meta on the same row, no dead band */
+  .ah__compact {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: calc(60 * var(--u));
+    align-items: end;
+  }
+  .ah__title--poster {
+    font-size: max(52px, calc(220 * var(--u)));
+    line-height: 0.84;
+    letter-spacing: var(--track-display);
+  }
+
+  .ah__row {
+    display: grid;
+    grid-template-columns: minmax(0, calc(900 * var(--u))) 1fr;
+    gap: calc(80 * var(--u));
+    align-items: end;
+    margin-top: max(24px, calc(56 * var(--u)));
+  }
+  .ah__dek {
+    margin: 0;
+    font-family: var(--font-pixel);
+    font-size: max(20px, calc(40 * var(--u)));
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+    text-align: justify;
+    text-align-last: left;
+  }
+  .ah__side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 16px;
+    justify-self: end;
+  }
+  .ah__side :global(.ah__star) { width: max(64px, calc(150 * var(--u))); height: auto; }
+  .ah__meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .ah--dark .ah__meta { color: #c9ccd0; }
+
+  @media (max-width: 899px) {
+    .ah__row { grid-template-columns: 1fr; gap: 20px; }
+    .ah__side { flex-direction: row-reverse; justify-content: space-between; align-items: center; justify-self: stretch; }
+    .ah__meta { align-items: flex-start; }
+    .ah__compact { grid-template-columns: 1fr; gap: 20px; }
+    .ah__title--poster { font-size: 14vw; }
+  }
+</style>

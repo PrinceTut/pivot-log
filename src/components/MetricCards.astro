@@ -23,36 +23,8 @@ const { metrics } = Astro.props;
 </div>
 
 <style>
-  .metric-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-    gap: var(--space-8);
-    margin: var(--space-8) 0;
-    padding: var(--space-6) 0;
-    border-top: var(--border);
-    border-bottom: var(--border);
-  }
-
-  .value {
-    font-family: var(--font-sans);
-    font-size: 1.75rem;
-    font-weight: 600;
-    color: var(--ink);
-  }
-
-  .label {
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    color: var(--ink-soft);
-    margin: var(--space-1) 0 var(--space-2);
-  }
-
-  .note {
-    font-family: var(--font-serif);
-    font-size: 0.9375rem;
-    color: var(--ink-soft);
-    margin: 0;
-  }
+  .metric-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: var(--space-8); margin: var(--space-8) 0; padding-top: var(--space-4); border-top: var(--rule); }
+  .value { font-family: var(--font-display); font-weight: 700; font-size: clamp(40px, 4vw, 64px); line-height: 0.95; letter-spacing: var(--track-statement); }
+  .label { font-family: var(--font-mono); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; margin: var(--space-2) 0; }
+  .note { font-size: 1rem; line-height: 1.5; margin: 0; }
 </style>

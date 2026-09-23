@@ -1,155 +1,66 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import IndexMasthead from '../../components/IndexMasthead.astro';
 import IndexEntry from '../../components/IndexEntry.astro';
 import type { ResearchMeta } from '../../types';
 
-const modules = import.meta.glob<{ meta: ResearchMeta }>('./*.astro', {
-  eager: true,
-});
-
+// Self-updating: every .astro file in this folder with a `meta` export is listed.
+const modules = import.meta.glob<{ meta: ResearchMeta }>('./*.astro', { eager: true });
 const pieces = Object.entries(modules)
   .filter(([path]) => !path.endsWith('/index.astro'))
   .map(([, mod]) => mod.meta)
   .filter(Boolean)
   .sort((a, b) => b.date.localeCompare(a.date));
 
-// Longer descriptions, matched to a project's slug — the koragraph
-// reference pairs a short dek with a fuller paragraph beneath it.
+// Longer descriptions shown under each dek, matched by slug.
 const descriptions: Record<string, string> = {
   'rag-chunking-and-retrieval':
     'An independent evaluation harness comparing six chunking strategies and four retrieval strategies over twenty structurally complex legal contracts, with every result traced back to its exact mechanism rather than left as a leaderboard number.',
   'building-an-slm':
     "I built a full RAG-plus-fine-tuned-SLM pipeline for India-Switzerland cross-border tax questions. The basic idea was for the knowledge to be in a curated database chunked and retrieved and the fine-tuned model behaving according to my specific use case.",
 };
+
+// Intro copy as approved in chat (restored; an earlier zip had overwritten it).
+const intro = "These are exercises I've done to build and break down systems, to understand the mechanisms behind building models, pipelines, and agents. Every piece here is something built out of curiosity.";
 ---
 
-<BaseLayout
-  title="Projects"
-  description="Independent write-ups on how systems actually behave — built, tested, and measured from the ground up."
->
-  <div class="projects-index">
-    <header>
-      <p class="kicker">Pivot Log Projects</p>
-      <h1>Projects.</h1>
-      <p class="intro">
-        Independent exercises in building and breaking systems, to understand
-        the mechanisms usually left as a black box. Every piece here is
-        something built and measured, not summarized secondhand.
-      </p>
-    </header>
+<BaseLayout title="Projects" description={intro} nav="gold">
+  <IndexMasthead theme="gold" title="Projects" rows={[['PROJ', 'ECTS']]} intro={intro} count={pieces.length} countLabel={pieces.length === 1 ? 'Build' : 'Builds'} />
 
-    <div class="section-header">
-      <h2>Builds</h2>
-      <span class="count">{pieces.length} {pieces.length === 1 ? 'build' : 'builds'}</span>
-    </div>
-    <hr />
-
-    <div class="list">
-      {pieces.map((piece) => (
-        <IndexEntry
-          href={`/projects/${piece.slug}`}
-          title={piece.title}
-          dek={piece.dek}
-          description={descriptions[piece.slug]}
-          stats={piece.stats}
-        />
-      ))}
-    </div>
-  </div>
+  <section class="list" aria-label="Builds">
+    {pieces.map((piece, i) => (
+      <IndexEntry
+        href={`/projects/${piece.slug}`}
+        slug={piece.slug}
+        index={i + 1}
+        title={piece.title}
+        dek={piece.dek}
+        description={descriptions[piece.slug]}
+        stats={piece.stats}
+      />
+    ))}
+  </section>
 </BaseLayout>
 
+<style>
+  .list { padding: var(--space-16) var(--gutter) 0; max-width: 1500px; margin: 0 auto; }
+  @media (max-width: 639px) { .list { padding-top: var(--space-8); } }
+</style>
+
 <script>
-  // Typographic/opacity differentiation as you scroll through the
-  // project list — the currently-centered entry stays at full opacity,
-  // the rest dim slightly. This is the agreed alternative to shifting
-  // background color per project (color stays reserved for data
-  // meaning elsewhere on the site). Same scroll-spy technique as the
-  // homepage's statement section (IntersectionObserver + a thin
-  // rootMargin band near viewport center) — reused deliberately rather
-  // than inventing a second mechanism for the same underlying need.
+  // Scroll focus: the entry nearest the viewport centre stays at full opacity, the
+  // rest dim to 0.75 (colour stays reserved for data). Only runs with 2+ entries.
   function setupProjectFocus() {
     const entries = document.querySelectorAll<HTMLElement>('[data-scroll-entry]');
-    if (entries.length < 2) return; // nothing to differentiate with only one entry
+    if (entries.length < 2) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    const observer = new IntersectionObserver(
-      (observerEntries) => {
-        observerEntries.forEach((observerEntry) => {
-          if (!observerEntry.isIntersecting) return;
-          entries.forEach((entry) => {
-            entry.classList.toggle('dimmed', entry !== observerEntry.target);
-          });
-        });
-      },
-      { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
-    );
-
-    entries.forEach((entry) => observer.observe(entry));
+    const observer = new IntersectionObserver((obs) => {
+      obs.forEach((o) => {
+        if (!o.isIntersecting) return;
+        entries.forEach((e) => e.classList.toggle('dimmed', e !== o.target));
+      });
+    }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+    entries.forEach((e) => observer.observe(e));
   }
-
   document.addEventListener('astro:page-load', setupProjectFocus);
 </script>
-
-<style>
-  .projects-index {
-    width: 100%;
-    padding: var(--space-16);
-  }
-
-  header {
-    margin-bottom: var(--space-16);
-    max-width: 42rem;
-  }
-
-  .kicker {
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--ink-soft);
-    margin-bottom: var(--space-4);
-  }
-
-  h1 {
-    font-size: 3.5rem;
-  }
-
-  .intro {
-    color: var(--ink-soft);
-    font-size: var(--size-dek);
-    margin-top: var(--space-4);
-  }
-
-  .section-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: var(--space-3);
-  }
-  .section-header h2 {
-    font-size: 1.75rem;
-  }
-  .count {
-    font-family: var(--font-sans);
-    font-size: 0.8125rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--ink-soft);
-  }
-
-  hr {
-    border: none;
-    border-top: 1px solid var(--ink);
-    margin: 0;
-  }
-
-  @media (max-width: 639px) {
-    .projects-index {
-      padding: var(--space-4);
-    }
-    h1 {
-      font-size: 2.25rem;
-    }
-  }
-</style>
