@@ -43,7 +43,7 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
       </div>
       <p class="hero__mobile-title" aria-hidden="true">Keeping up with the frontier</p>
 
-      <img class="hero__logo rv-logo" style="--a:.02; --b:.30" src={withBase('/logo.webp')} alt="Pivot Log" width="729" height="402" fetchpriority="high" />
+      <img class="hero__logo rv-logo" style="--a:.02; --b:.30" src={withBase('/logo.webp')} alt="Pivot Log" width="515" height="370" fetchpriority="high" />
       <div class="hero__rule rv" style="--a:.56; --b:.66"></div>
       <p class="hero__sub rv" style="--a:.60; --b:.72">{heroSub}<span class="cursor" aria-hidden="true">|</span></p>
 
@@ -141,7 +141,7 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
   /* Reveal: --t runs 0 -> 1 as scroll progress --p moves through this element's [--a, --b] window */
   .rv, .rv-logo, .rv-cue { --t: clamp(0, calc((var(--p) - var(--a)) / (var(--b) - var(--a))), 1); }
   .rv { opacity: var(--t); translate: 0 calc((1 - var(--t)) * 30 * var(--u)); }
-  .rv-logo { translate: 0 calc((1 - var(--t)) * 122 * var(--u)); }   /* starts dead centre, settles to its Figma spot */
+  .rv-logo { translate: 0 calc((1 - var(--t)) * 118 * var(--u)); }   /* starts dead centre, settles to its Figma spot */
   .rv-cue { opacity: calc(1 - var(--t)); }
   .hero-track.is-pinned .hero:not(.is-revealed) .hero__pills { pointer-events: none; }
 
@@ -179,9 +179,9 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
   .hero__mobile-title { display: none; }
   .hero__logo {
     position: absolute;
-    left: calc(596 * var(--u));
-    top: calc(262 * var(--u));
-    width: calc(729 * var(--u));
+    left: calc(703 * var(--u));
+    top: calc(282 * var(--u));
+    width: calc(515 * var(--u));
     height: auto;
   }
   .hero__rule {
@@ -392,7 +392,7 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
       text-transform: uppercase;
     }
     .hero__logo, .hero__rule, .hero__sub, .hero__pills { position: static; }
-    .hero__logo { width: min(78%, 420px); display: block; margin: 0 auto; }
+    .hero__logo { width: min(62%, 320px); display: block; margin: 0 auto; }
     .hero__rule { width: min(84%, 460px); height: 5px; margin: 6px auto 12px; }
     .hero__sub { width: auto; font-size: 22px; line-height: 20px; }
     .hero__pills { flex-wrap: wrap; gap: 8px; margin-top: 18px; }

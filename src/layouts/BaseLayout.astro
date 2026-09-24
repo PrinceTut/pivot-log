@@ -33,7 +33,9 @@ const { title, description, nav = 'paper' } = Astro.props;
     <title>{title} · Pivot Log</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#f2cd53" />
-    <link rel="icon" type="image/png" href={withBase('/favicon.png')} />
+    <link rel="icon" type="image/png" sizes="32x32" href={withBase('/favicon.png')} />
+    <link rel="icon" type="image/png" sizes="16x16" href={withBase('/favicon-16.png')} />
+    <link rel="apple-touch-icon" sizes="180x180" href={withBase('/apple-touch-icon.png')} />
     <link rel="preload" href={victorMono400} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={victorMono700} as="font" type="font/woff2" crossorigin />
     {ADOBE_KIT_ID && <link rel="stylesheet" href={`https://use.typekit.net/${ADOBE_KIT_ID}.css`} />}
