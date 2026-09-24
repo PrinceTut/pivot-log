@@ -21,8 +21,9 @@ interface Props {
   title: string;
   description: string;
   nav?: 'gold' | 'dark' | 'paper' | false;
+  footer?: boolean;
 }
-const { title, description, nav = 'paper' } = Astro.props;
+const { title, description, nav = 'paper', footer = true } = Astro.props;
 ---
 
 <!doctype html>
@@ -53,6 +54,6 @@ const { title, description, nav = 'paper' } = Astro.props;
     <main>
       <slot />
     </main>
-    <Footer />
+    {footer && <Footer />}
   </body>
 </html>
