@@ -68,12 +68,17 @@ const isScratchnotes = path.includes('/scratchnotes');
 <script>
   // Solid paper bar + black rule once the page scrolls. astro:page-load so it
   // re-binds after every client-side page transition, not just the first load.
+  // Listener is removed on navigation (the window persists across page transitions).
+  let off: (() => void) | null = null;
   function setupNavScroll() {
+    off?.(); off = null;
     const nav = document.getElementById('site-nav');
     if (!nav) return;
     const update = () => nav.classList.toggle('scrolled', window.scrollY > 8);
     window.addEventListener('scroll', update, { passive: true });
     update();
+    off = () => window.removeEventListener('scroll', update);
   }
   document.addEventListener('astro:page-load', setupNavScroll);
+  document.addEventListener('astro:before-swap', () => { off?.(); off = null; });
 </script>

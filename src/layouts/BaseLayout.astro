@@ -13,6 +13,9 @@ import Footer from '../components/Footer.astro';
 import { ClientRouter } from 'astro:transitions';
 import { withBase } from '../utils/url';
 import { ADOBE_KIT_ID } from '../config';
+// Preloaded so Victor Mono is ready on first paint (no flash of a fallback mono font).
+import victorMono400 from '@fontsource/victor-mono/files/victor-mono-latin-400-normal.woff2?url';
+import victorMono700 from '@fontsource/victor-mono/files/victor-mono-latin-700-normal.woff2?url';
 
 interface Props {
   title: string;
@@ -31,6 +34,8 @@ const { title, description, nav = 'paper' } = Astro.props;
     <meta name="description" content={description} />
     <meta name="theme-color" content="#f2cd53" />
     <link rel="icon" type="image/png" href={withBase('/favicon.png')} />
+    <link rel="preload" href={victorMono400} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={victorMono700} as="font" type="font/woff2" crossorigin />
     {ADOBE_KIT_ID && <link rel="stylesheet" href={`https://use.typekit.net/${ADOBE_KIT_ID}.css`} />}
     {ADOBE_KIT_ID && (
       <script is:inline data-astro-rerun>

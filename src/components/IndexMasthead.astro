@@ -7,7 +7,7 @@ import StarBadge from './StarBadge.astro';
 interface Props {
   theme: 'gold' | 'dark';
   title: string;             // accessible page title
-  rows: [string, string][];  // [left word, right word] per display row
+  rows: string[][];          // display rows; items spread edge to edge, '*' = spinning badge
   intro: string;
   count: number;
   countLabel: string;
@@ -19,12 +19,11 @@ const { theme, title, rows, intro, count, countLabel } = Astro.props;
   <header class:list={['im', `im--${theme}`]}>
     <h1 class="sr-only">{title}</h1>
     <div class="im__words" aria-hidden="true">
-      {rows.map(([l, r]) => (
-        <div class="im__row"><span>{l}</span><span>{r}</span></div>
+      {rows.map((row) => (
+        <div class="im__row">{row.map((item) => item === '*' ? <StarBadge class="im__star" /> : <span>{item}</span>)}</div>
       ))}
     </div>
     <div class="im__bottom">
-      <StarBadge class="im__star" />
       <p class="im__intro">{intro}<span class="cursor" aria-hidden="true">|</span></p>
       <p class="im__count"><span class="im__num">{String(count).padStart(2, '0')}</span><span class="im__label">{countLabel}</span></p>
     </div>
@@ -39,6 +38,7 @@ const { theme, title, rows, intro, count, countLabel } = Astro.props;
   .im__row {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     font-family: var(--font-display);
     font-weight: 700;
     font-size: calc(300 * var(--u));
@@ -48,13 +48,13 @@ const { theme, title, rows, intro, count, countLabel } = Astro.props;
   }
   .im__bottom {
     display: grid;
-    grid-template-columns: calc(242 * var(--u)) minmax(0, calc(822 * var(--u))) 1fr;
+    grid-template-columns: minmax(0, calc(822 * var(--u))) 1fr;
     gap: calc(60 * var(--u));
     align-items: end;
     margin-top: calc(40 * var(--u));
-    padding-left: calc(34 * var(--u));
+    padding-left: calc(6 * var(--u));
   }
-  .im__bottom :global(.im__star) { width: calc(200 * var(--u)); height: auto; }
+  .im__row :global(.im__star) { flex: none; width: calc(215 * var(--u)); height: calc(215 * var(--u)); }
   .im__intro {
     margin: 0;
     font-family: var(--font-pixel);
@@ -84,9 +84,9 @@ const { theme, title, rows, intro, count, countLabel } = Astro.props;
 
   @media (max-width: 899px) {
     .im { padding: 12px var(--gutter) 32px; }
-    .im__row { font-size: 18.5vw; line-height: 0.86; }
+    .im__row { font-size: 16vw; line-height: 0.86; }
     .im__bottom { grid-template-columns: 1fr auto; gap: 16px; margin-top: 16px; padding-left: 0; }
-    .im__bottom :global(.im__star) { display: none; }
+    .im__row :global(.im__star) { width: 11vw; height: 11vw; }
     .im__intro { grid-column: 1 / -1; font-size: 21px; line-height: 19px; }
     .im__num { font-size: 72px; }
     .im__count { grid-column: 1 / -1; flex-direction: row; align-items: baseline; gap: 10px; justify-self: start; }

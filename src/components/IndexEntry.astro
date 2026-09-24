@@ -2,7 +2,7 @@
 import type { ResearchStat } from '../types';
 import { withBase } from '../utils/url';
 import GlassPill from './GlassPill.astro';
-import ProjectIcon from './ProjectIcon.astro';
+import PieceIcon from './PieceIcon.astro';
 
 interface Props {
   href: string;          // site-internal path, e.g. '/projects/my-slug' (base-prefixed here)
@@ -20,7 +20,7 @@ const link = withBase(href);
 
 <article class="entry" data-scroll-entry>
   <p class="entry__num" aria-hidden="true">{String(index).padStart(2, '0')}</p>
-  <a class="entry__icon" href={link} tabindex="-1" aria-hidden="true"><ProjectIcon slug={slug} /></a>
+  <a class="entry__icon" href={link} tabindex="-1" aria-hidden="true"><PieceIcon slug={slug} /></a>
   <div class="entry__body">
     <h2 class="entry__title"><a href={link}>{title}</a></h2>
     <p class="entry__dek">{dek}</p>
@@ -56,8 +56,8 @@ const link = withBase(href);
     line-height: 0.78;
     letter-spacing: var(--track-display);
   }
-  .entry__icon { display: block; width: 150px; height: 150px; padding: 18px; background: var(--slab); }
-  .entry__icon:hover { background: var(--gold); }
+  .entry__icon { display: block; width: 150px; height: 150px; }
+  .entry__icon:hover :global(.piece-icon) { --icon-bg: var(--black); color: var(--gold); }
 
   .entry__title { margin: 0 0 16px; font-size: clamp(28px, 3vw, 52px); line-height: 0.95; letter-spacing: var(--track-statement); text-transform: uppercase; }
   .entry__title a { text-decoration: none; color: inherit; }
@@ -72,7 +72,7 @@ const link = withBase(href);
   @media (max-width: 1099px) {
     .entry { grid-template-columns: 110px minmax(0, 1fr); }
     .entry__num { font-size: 96px; }
-    .entry__icon { grid-column: 1; grid-row: 2; width: 110px; height: 110px; padding: 12px; }
+    .entry__icon { grid-column: 1; grid-row: 2; width: 110px; height: 110px; }
     .entry__body { grid-column: 2; grid-row: 1 / span 2; }
   }
   @media (max-width: 639px) {

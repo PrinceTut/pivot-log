@@ -23,7 +23,7 @@ export const meta: ResearchMeta = {
 ---
 
 <BaseLayout title={meta.title} description={meta.dek} nav="gold">
-  <ArticleHeader theme="gold" title={meta.title} backHref={withBase('/projects')} backLabel="Projects" meta={['Pivot Log · Independent research']}>
+  <ArticleHeader icon={meta.slug} theme="gold" title={meta.title} backHref={withBase('/projects')} backLabel="Projects" meta={['Pivot Log · Independent research']}>
     <Fragment slot="dek">{meta.dek}</Fragment>
     <StatStrip slot="after" stats={meta.stats} />
   </ArticleHeader>

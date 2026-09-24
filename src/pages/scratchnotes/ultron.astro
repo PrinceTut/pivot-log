@@ -16,7 +16,7 @@ export const meta: ResearchMeta = {
 ---
 
 <BaseLayout title={meta.title} description={meta.dek} nav="dark">
-  <ArticleHeader theme="dark" title={meta.title} backHref={withBase('/scratchnotes')} backLabel="Scratchnotes" meta={[meta.date]} tags={meta.tags} />
+  <ArticleHeader icon={meta.slug} theme="dark" title={meta.title} backHref={withBase('/scratchnotes')} backLabel="Scratchnotes" meta={[meta.date]} tags={meta.tags} />
 
   <article class="note">
 

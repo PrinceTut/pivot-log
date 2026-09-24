@@ -1,0 +1,68 @@
+---
+// One icon per piece (projects and scratchnotes), all drawn to one rule set:
+// gold square, black outlined cells, solid black = the part that matters.
+//   rag-chunking-and-retrieval: the 5x4 chunker x retrieval grid; Contextual + Hybrid
+//     (+5.14, the largest and most significant result) filled.
+//   building-an-slm: the author's LoRA note, "under 1% of the model actually trains":
+//     eight frozen layers, each with a small trainable adapter slice.
+//   end2end-hackerman: a computer with a padlock on screen: quantum computing vs the
+//     encryption the note says upholds "net banking and UPI".
+//   ultron: agents wired to one central message board; the founding agent
+//     (PHASEONE10841, who established the board) filled.
+interface Props { slug: string; }
+const { slug } = Astro.props;
+
+const grid: { x: number; y: number; on: boolean }[] = [];
+if (slug === 'rag-chunking-and-retrieval')
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 4; c++) grid.push({ x: 12 + c * 20, y: 2 + r * 20, on: r === 4 && c === 0 });
+const layers = slug === 'building-an-slm' ? Array.from({ length: 8 }, (_, i) => 6 + i * 11.5) : [];
+const agents = slug === 'ultron'
+  ? [[14,14],[50,14],[86,14],[14,50],[86,50],[14,86],[50,86],[86,86]].map(([x, y], i) => ({ x, y, on: i === 0 }))
+  : [];
+const isHack = slug === 'end2end-hackerman';
+const known = grid.length > 0 || layers.length > 0 || agents.length > 0 || isHack;
+---
+
+{known && (
+  <div class="piece-icon" aria-hidden="true">
+    <svg viewBox="0 0 100 100">
+      {grid.map((c) => <rect x={c.x} y={c.y} width="16" height="16" class:list={['cell', { on: c.on }]} />)}
+      {layers.map((y) => (<g><rect x="8" y={y} width="84" height="8" class="cell" /><rect x="70" y={y} width="7" height="8" class="cell on" /></g>))}
+      {isHack && (
+        <g>
+          <rect x="10" y="8" width="80" height="56" class="cell" />
+          <path d="M42 38 V30 A8 8 0 0 1 58 30 V38" class="line" />
+          <rect x="37" y="38" width="26" height="17" class="cell on" />
+          <rect x="46" y="64" width="8" height="10" class="cell" />
+          {[0,1,2,3,4,5].map((i) => <rect x={9 + i * 14} y="80" width="12" height="11" class="cell" />)}
+        </g>
+      )}
+      {agents.length > 0 && (
+        <g>
+          {agents.map((a) => <line x1={a.x} y1={a.y} x2="50" y2="50" class="line" />)}
+          <rect x="37" y="37" width="26" height="26" class="cell on" />
+          {agents.map((a) => <rect x={a.x - 7} y={a.y - 7} width="14" height="14" class:list={['cell', 'bg', { on: a.on }]} />)}
+        </g>
+      )}
+    </svg>
+  </div>
+)}
+
+<style>
+  .piece-icon {
+    --icon-bg: var(--gold);
+    width: 100%;
+    aspect-ratio: 1;
+    padding: 12%;
+    background: var(--icon-bg);
+    color: var(--black);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .piece-icon { transition: background-color var(--transition-fast), color var(--transition-fast); }
+  }
+  svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .cell { fill: none; stroke: currentColor; stroke-width: 2; }
+  .cell.bg { fill: var(--icon-bg); }
+  .cell.on { fill: currentColor; }
+  .line { fill: none; stroke: currentColor; stroke-width: 2; }
+</style>

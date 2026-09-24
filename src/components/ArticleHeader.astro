@@ -3,6 +3,7 @@
 // pixel floors so nothing gets unreadably small on phones.
 // Slots: "dek" (verbatim dek text, set in the pixel serif), "after" (e.g. StatStrip).
 import StarBadge from './StarBadge.astro';
+import PieceIcon from './PieceIcon.astro';
 
 interface Props {
   theme?: 'gold' | 'dark';
@@ -11,8 +12,9 @@ interface Props {
   backLabel: string;
   meta?: string[];
   tags?: string[];
+  icon?: string;   // piece slug: shows that piece's illustration instead of the badge
 }
-const { theme = 'gold', title, backHref, backLabel, meta = [], tags = [] } = Astro.props;
+const { theme = 'gold', title, backHref, backLabel, meta = [], tags = [], icon } = Astro.props;
 const hasDek = Astro.slots.has('dek');
 ---
 
@@ -28,7 +30,7 @@ const hasDek = Astro.slots.has('dek');
         <div class="ah__row">
           <p class="ah__dek"><slot name="dek" /><span class="cursor" aria-hidden="true">|</span></p>
           <div class="ah__side">
-            <StarBadge class="ah__star" />
+            {icon ? <span class="ah__icon"><PieceIcon slug={icon} /></span> : <StarBadge class="ah__star" />}
             {meta.length > 0 && <p class="ah__meta">{meta.map((m) => <span>{m}</span>)}</p>}
           </div>
         </div>
@@ -37,7 +39,7 @@ const hasDek = Astro.slots.has('dek');
       <div class="ah__compact">
         <h1 class="ah__title ah__title--poster">{title}</h1>
         <div class="ah__side">
-          <StarBadge class="ah__star" />
+          {icon ? <span class="ah__icon"><PieceIcon slug={icon} /></span> : <StarBadge class="ah__star" />}
           {meta.length > 0 && <p class="ah__meta">{meta.map((m) => <span>{m}</span>)}</p>}
         </div>
       </div>
@@ -127,6 +129,9 @@ const hasDek = Astro.slots.has('dek');
     justify-self: end;
   }
   .ah__side :global(.ah__star) { width: max(64px, calc(150 * var(--u))); height: auto; }
+  .ah__icon { display: block; width: max(88px, calc(170 * var(--u))); }
+  /* On a gold masthead a gold icon would vanish, so invert it (same as its hover state) */
+  .ah--gold .ah__icon :global(.piece-icon) { --icon-bg: var(--black); color: var(--gold); }
   .ah__meta {
     display: flex;
     flex-direction: column;

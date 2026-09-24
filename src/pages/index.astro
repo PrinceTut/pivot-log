@@ -28,38 +28,43 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
 <BaseLayout title="Pivot Log" description="Independent projects and write-ups breaking down the LLM space and its components." nav={false}>
   <!-- HERO: Figma frame 31:3, rectangle 1920x1171 #f2cd53 -->
   <div class="cq">
-    <section class="hero" aria-labelledby="hero-title">
+   <div class="hero-track" id="hero-track">
+    <section class="hero" id="hero" aria-labelledby="hero-title">
       <h1 id="hero-title" class="sr-only">Keeping up with the Frontier</h1>
 
       <div class="hero__words" aria-hidden="true">
-        <span class="w" style="--x:21; --y:37">KEEPING</span>
-        <span class="w w--r" style="--y:37">UP</span>
-        <span class="w" style="--x:21; --y:320">WI</span>
-        <span class="w w--r" style="--y:320">TH</span>
-        <span class="w" style="--x:21; --y:603">TH</span>
-        <span class="w w--r" style="--y:603">E</span>
-        <span class="w" style="--x:21; --y:886">FRONTIER</span>
+        <span class="w rv" style="--x:21; --y:37; --a:.08; --b:.22">KEEPING</span>
+        <span class="w w--r rv" style="--y:37; --a:.14; --b:.28">UP</span>
+        <span class="w rv" style="--x:21; --y:320; --a:.20; --b:.34">WI</span>
+        <span class="w w--r rv" style="--y:320; --a:.26; --b:.40">TH</span>
+        <span class="w rv" style="--x:21; --y:603; --a:.32; --b:.46">TH</span>
+        <span class="w w--r rv" style="--y:603; --a:.38; --b:.52">E</span>
+        <span class="w rv" style="--x:21; --y:886; --a:.44; --b:.58">FRONTIER</span>
       </div>
       <p class="hero__mobile-title" aria-hidden="true">Keeping up with the frontier</p>
 
-      <img class="hero__logo" src={withBase('/logo.webp')} alt="Pivot Log" width="729" height="402" fetchpriority="high" />
-      <div class="hero__rule"></div>
-      <p class="hero__sub">{heroSub}<span class="cursor" aria-hidden="true">|</span></p>
+      <img class="hero__logo rv-logo" style="--a:.02; --b:.30" src={withBase('/logo.webp')} alt="Pivot Log" width="729" height="402" fetchpriority="high" />
+      <div class="hero__rule rv" style="--a:.56; --b:.66"></div>
+      <p class="hero__sub rv" style="--a:.60; --b:.72">{heroSub}<span class="cursor" aria-hidden="true">|</span></p>
 
-      <nav class="hero__pills" aria-label="Main">
+      <nav class="hero__pills rv" style="--a:.66; --b:.78" aria-label="Main">
         <GlassPill href={withBase('/projects')} label="Projects" size="lg" />
         <GlassPill href={withBase('/scratchnotes')} label="Scratchnotes" size="lg" />
         <GlassPill href={REPO_URL} label="Git Repo" size="lg" external />
       </nav>
 
-      <StarBadge class="hero__star" />
+      <div class="hero__star-wrap rv" style="--a:.70; --b:.82"><StarBadge class="hero__star" /></div>
+      <p class="hero__cue rv-cue" style="--a:0; --b:.08" aria-hidden="true">Scroll <span>&darr;</span></p>
     </section>
+   </div>
   </div>
 
   <!-- SLOT: Figma "Rectangle 7" 1119x567 #d9d9d9 (placeholder), filled with the network graph -->
   <div class="cq">
+   <div class="story-track" id="story-track">
+    <div class="story" id="story">
     <section class="slot" aria-label="From scattered notes to a testable claim">
-      <figure class="slab">
+      <figure class="slab" id="slab" data-state="2">
         <svg class="graph" viewBox="0 0 1119 567" aria-hidden="true">
           <g class="g-structure">{structureEdges.map(([a,b,c,d]) => <line x1={X(a)} y1={Y(b)} x2={X(c)} y2={Y(d)} />)}</g>
           <g class="g-path">{pathEdges.map(([a,b,c,d]) => <line x1={X(a)} y1={Y(b)} x2={X(c)} y2={Y(d)} />)}</g>
@@ -73,10 +78,8 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
         </figcaption>
       </figure>
     </section>
-  </div>
 
-  <!-- STATEMENT: Figma text node at (55,1814), 128px, with redaction bars and the prism -->
-  <div class="cq">
+    <!-- STATEMENT: Figma text node at (55,1814), 128px, with redaction bars and the prism -->
     <section class="st" aria-labelledby="st-title">
       <h2 id="st-title" class="sr-only">A repository of all my tech perspectives</h2>
 
@@ -96,7 +99,7 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
       </div>
 
       <div class="prism-stage">
-        <ul class="prism">
+        <ul class="prism" id="prism">
           {statements.map((s, i) => <li class="face" style={`--i:${i}`}>{s}</li>)}
         </ul>
       </div>
@@ -112,17 +115,55 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
       <!-- Mobile composition (below 900px): same content, reflowed -->
       <p class="st__mobile" aria-hidden="true">A <span class="ibar" style="--w:2.4em"></span> Repository of all my <span class="ibar" style="--w:1.2em"></span> tech <span class="ibar" style="--w:1.8em"></span> perspectives</p>
     </section>
+    </div>
+   </div>
   </div>
 </BaseLayout>
 
 <style>
   /* ---------------- HERO ---------------- */
+  /* Scale = smaller of width/1920 and screen-height/1171, so the pinned poster always fits. */
+  .cq > .hero-track { --u: min(calc(100cqw / 1920), calc(100svh / 1171)); background: var(--gold); }
   .hero {
+    --p: 1;
     position: relative;
+    width: calc(1920 * var(--u));
     height: calc(1171 * var(--u));
+    margin: 0 auto;
     background: var(--gold);
     overflow: hidden;
   }
+  .hero-track.is-pinned { height: calc(1171 * var(--u) + 150svh); }
+  .hero-track.is-pinned .hero { position: sticky; top: max(0px, calc((100svh - 1171 * var(--u)) / 2)); }
+  /* Keyboard users tabbing into the hero see it fully revealed at once */
+  .hero:focus-within { --p: 1 !important; }
+
+  /* Reveal: --t runs 0 -> 1 as scroll progress --p moves through this element's [--a, --b] window */
+  .rv, .rv-logo, .rv-cue { --t: clamp(0, calc((var(--p) - var(--a)) / (var(--b) - var(--a))), 1); }
+  .rv { opacity: var(--t); translate: 0 calc((1 - var(--t)) * 30 * var(--u)); }
+  .rv-logo { translate: 0 calc((1 - var(--t)) * 122 * var(--u)); }   /* starts dead centre, settles to its Figma spot */
+  .rv-cue { opacity: calc(1 - var(--t)); }
+  .hero-track.is-pinned .hero:not(.is-revealed) .hero__pills { pointer-events: none; }
+
+  .hero__cue {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(1060 * var(--u));
+    margin: 0;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: max(12px, calc(18 * var(--u)));
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .hero-track:not(.is-pinned) .hero__cue { display: none; }
+  .hero__cue span { display: inline-block; }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero__cue span { animation: cue-nudge 1.4s ease-in-out infinite; }
+  }
+  @keyframes cue-nudge { 50% { translate: 0 0.3em; } }
   .w {
     position: absolute;
     left: calc(var(--x) * var(--u));
@@ -171,13 +212,20 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
     display: flex;
     gap: calc(30 * var(--u));
   }
-  .hero :global(.hero__star) {
+  .hero__star-wrap {
     position: absolute;
     left: calc(1637 * var(--u));
     top: calc(888 * var(--u));
     width: calc(242 * var(--u));
     height: calc(242 * var(--u));
   }
+  .hero__star-wrap :global(.hero__star) { width: 100%; height: 100%; }
+
+  /* ---------------- STORY (graph + statement, pinned together) ---------------- */
+  .cq > .story-track { --u: min(calc(100cqw / 1920), calc(100svh / 1215)); }
+  .story { width: calc(1920 * var(--u)); margin: 0 auto; }
+  .story-track.is-pinned { height: calc(1215 * var(--u) + 200svh); }
+  .story-track.is-pinned .story { position: sticky; top: max(0px, calc((100svh - 1215 * var(--u)) / 2)); }
 
   /* ---------------- SLOT (graph) ---------------- */
   .slot { padding: calc(43 * var(--u)) 0 0 calc(36 * var(--u)); }
@@ -209,30 +257,22 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
   }
   .lbl { opacity: 0.35; }
 
-  /* Graph states follow the prism clock (7.92s): face 1 front at 0%, face 2 at 33%, face 3 at 67% */
-  .g-structure { opacity: 0; } .g-path { opacity: 0; }
-  .g-context, .g-pathnodes { opacity: 0.45; }
-  @media (prefers-reduced-motion: no-preference) {
-    .g-structure { animation: g-structure 7.92s linear infinite; }
-    .g-path { animation: g-path 7.92s linear infinite; }
-    .g-context { animation: g-context 7.92s linear infinite; }
-    .g-pathnodes { animation: g-pathnodes 7.92s linear infinite; }
-    .lbl--a { animation: lbl-a 7.92s linear infinite; }
-    .lbl--b { animation: lbl-b 7.92s linear infinite; }
-    .lbl--c { animation: lbl-c 7.92s linear infinite; }
-  }
+  /* Graph states follow the prism: data-state 0/1/2 is set from scroll progress (default 2 = resolved) */
+  .g-structure, .g-path, .g-context, .g-pathnodes, .lbl { transition: opacity 0.45s ease; }
+  .slab[data-state="0"] .g-structure { opacity: 0; }
+  .slab[data-state="0"] .g-path { opacity: 0; }
+  .slab[data-state="0"] .g-context, .slab[data-state="0"] .g-pathnodes { opacity: 0.45; }
+  .slab[data-state="1"] .g-structure { opacity: 0.55; }
+  .slab[data-state="1"] .g-path { opacity: 0; }
+  .slab[data-state="1"] .g-context, .slab[data-state="1"] .g-pathnodes { opacity: 0.8; }
+  .slab[data-state="2"] .g-structure { opacity: 0.15; }
+  .slab[data-state="2"] .g-path { opacity: 1; }
+  .slab[data-state="2"] .g-context { opacity: 0.3; }
+  .slab[data-state="2"] .g-pathnodes { opacity: 1; }
+  .slab[data-state="0"] .lbl--a, .slab[data-state="1"] .lbl--b, .slab[data-state="2"] .lbl--c { opacity: 1; }
   @media (prefers-reduced-motion: reduce) {
-    /* No motion: show the resolved end state */
-    .g-structure { opacity: 0.15; } .g-path { opacity: 1; } .g-context { opacity: 0.3; } .g-pathnodes { opacity: 1; }
-    .lbl--c { opacity: 1; }
+    .g-structure, .g-path, .g-context, .g-pathnodes, .lbl { transition: none; }
   }
-  @keyframes g-structure { 0%,13.7% {opacity:0} 19.7%,47% {opacity:.55} 53%,80.3% {opacity:.15} 86.3%,100% {opacity:0} }
-  @keyframes g-path      { 0%,47% {opacity:0} 53%,80.3% {opacity:1} 86.3%,100% {opacity:0} }
-  @keyframes g-context   { 0%,13.7% {opacity:.45} 19.7%,47% {opacity:.8} 53%,80.3% {opacity:.3} 86.3%,100% {opacity:.45} }
-  @keyframes g-pathnodes { 0%,13.7% {opacity:.45} 19.7%,47% {opacity:.8} 53%,80.3% {opacity:1} 86.3%,100% {opacity:.45} }
-  @keyframes lbl-a { 0%,13.7% {opacity:1} 19.7%,80.3% {opacity:.35} 86.3%,100% {opacity:1} }
-  @keyframes lbl-b { 0%,13.7% {opacity:.35} 19.7%,47% {opacity:1} 53%,100% {opacity:.35} }
-  @keyframes lbl-c { 0%,47% {opacity:.35} 53%,80.3% {opacity:1} 86.3%,100% {opacity:.35} }
 
   /* ---------------- STATEMENT ---------------- */
   .st {
@@ -284,7 +324,7 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
     padding: 0;
     list-style: none;
     transform-style: preserve-3d;
-    transform: translateZ(calc(-600 * var(--u)));
+    transform: translateZ(calc(-600 * var(--u))) rotateY(var(--spin, 0deg));
   }
   .face {
     position: absolute;
@@ -298,19 +338,6 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
     text-transform: uppercase;
     text-align: justify;
     text-align-last: left;
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .prism { animation: prism-spin 7.92s linear infinite; }
-  }
-  @keyframes prism-spin {
-    from { transform: translateZ(calc(-600 * var(--u))) rotateY(0deg); }
-    to   { transform: translateZ(calc(-600 * var(--u))) rotateY(-360deg); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    /* Flatten to three readable columns */
-    .prism-stage { left: calc(160 * var(--u)); width: calc(1440 * var(--u)); perspective: none; }
-    .prism { display: flex; gap: calc(60 * var(--u)); transform: none; }
-    .face { position: static; transform: none; flex: 1; }
   }
 
   .st__mono {
@@ -339,6 +366,18 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
   .st__mobile { display: none; }
 
   /* ---------------- MOBILE (below 900px): reflow instead of shrinking the poster ---------------- */
+  @media (max-width: 899px) and (prefers-reduced-motion: no-preference) {
+    .hero__mobile-title, .hero__logo, .hero__rule, .hero__sub, .hero__pills, .hero__star-wrap {
+      animation: load-in 0.7s ease both;
+    }
+    .hero__logo { animation-delay: 0s; }
+    .hero__mobile-title { animation-delay: 0.15s; }
+    .hero__rule { animation-delay: 0.3s; }
+    .hero__sub { animation-delay: 0.4s; }
+    .hero__pills { animation-delay: 0.5s; }
+    .hero__star-wrap { animation-delay: 0.6s; }
+  }
+  @keyframes load-in { from { opacity: 0; translate: 0 14px; } }
   @media (max-width: 899px) {
     .hero { height: auto; padding: 28px var(--gutter) 40px; }
     .hero__words { display: none; }
@@ -358,7 +397,10 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
     .hero__sub { width: auto; font-size: 22px; line-height: 20px; }
     .hero__pills { flex-wrap: wrap; gap: 8px; margin-top: 18px; }
     .hero__pills :global(.pill--lg) { --h: 40px; }
-    .hero :global(.hero__star) { position: static; display: block; width: 64px; height: 64px; margin: 18px 0 0 auto; }
+    .hero { width: auto; }
+    .story { width: auto; }
+    .hero__star-wrap { position: static; width: 64px; height: 64px; margin: 18px 0 0 auto; }
+    .hero__mobile-title, .hero__logo, .hero__rule, .hero__sub, .hero__pills, .hero__star-wrap { translate: none; }
 
     .slot { padding: 20px var(--gutter) 0; }
     .slab { width: 100%; height: auto; aspect-ratio: 1119 / 567; }
@@ -386,3 +428,79 @@ const heroSub = 'Independent projects and write-ups breaking down the LLM space 
     .st__pills :global(.pill--lg) { --h: 40px; }
   }
 </style>
+
+<script>
+  // Two pinned scroll sequences on desktop (>= 900px, motion allowed):
+  //  1. Hero: only the logo at first; words, then subtitle/pills/badge reveal with scroll.
+  //  2. Story: the prism turns one statement per scroll stretch; the graph state follows.
+  // Without JS, on phones, or with reduced motion, nothing pins and everything shows.
+  let cleanup: (() => void) | null = null;
+
+  const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+  const smooth = (t: number) => t * t * (3 - 2 * t);
+
+  // Progress 0..1 through a pinned track: 0 when it reaches the top, 1 when it's about to release.
+  function progress(track: HTMLElement) {
+    const r = track.getBoundingClientRect();
+    return clamp01(-r.top / Math.max(1, r.height - window.innerHeight));
+  }
+
+  // Prism position in "faces": hold on 0, turn to 1, hold, turn to 2, hold.
+  function faceAt(p: number) {
+    if (p < 0.2) return 0;
+    if (p < 0.4) return smooth((p - 0.2) / 0.2);
+    if (p < 0.6) return 1;
+    if (p < 0.8) return 1 + smooth((p - 0.6) / 0.2);
+    return 2;
+  }
+
+  function setup() {
+    cleanup?.();
+    cleanup = null;
+    const heroTrack = document.getElementById('hero-track');
+    const hero = document.getElementById('hero');
+    const storyTrack = document.getElementById('story-track');
+    const prism = document.getElementById('prism');
+    const slab = document.getElementById('slab');
+    if (!heroTrack || !hero || !storyTrack || !prism || !slab) return;
+
+    const canPin = window.matchMedia('(min-width: 900px) and (prefers-reduced-motion: no-preference)');
+    let ticking = false;
+
+    const render = () => {
+      ticking = false;
+      if (!canPin.matches) return;
+      const hp = progress(heroTrack);
+      hero.style.setProperty('--p', hp.toFixed(4));
+      hero.classList.toggle('is-revealed', hp >= 0.7);
+      const f = faceAt(progress(storyTrack));
+      prism.style.setProperty('--spin', `${(-120 * f).toFixed(2)}deg`);
+      slab.dataset.state = String(Math.round(f));
+    };
+    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(render); } };
+    const apply = () => {
+      const on = canPin.matches;
+      heroTrack.classList.toggle('is-pinned', on);
+      storyTrack.classList.toggle('is-pinned', on);
+      if (on) render();
+      else {
+        hero.style.removeProperty('--p');
+        prism.style.removeProperty('--spin');
+        slab.dataset.state = '2';
+      }
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    canPin.addEventListener('change', apply);
+    apply();
+    cleanup = () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      canPin.removeEventListener('change', apply);
+    };
+  }
+
+  document.addEventListener('astro:page-load', setup);
+  document.addEventListener('astro:before-swap', () => { cleanup?.(); cleanup = null; });
+</script>

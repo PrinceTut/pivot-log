@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import IndexMasthead from '../../components/IndexMasthead.astro';
+import PieceIcon from '../../components/PieceIcon.astro';
 import { withBase } from '../../utils/url';
 import type { ResearchMeta } from '../../types';
 
@@ -17,7 +18,7 @@ const intro = 'A place to write about things I find important and want to think 
 ---
 
 <BaseLayout title="Scratchnotes" description={intro} nav="dark">
-  <IndexMasthead theme="dark" title="Scratchnotes" rows={[['SCRATCH', ''], ['', 'NOTES']]} intro={intro} count={notes.length} countLabel={notes.length === 1 ? 'Post' : 'Posts'} />
+  <IndexMasthead theme="dark" title="Scratchnotes" rows={[['SCRATCH', '*'], ['', 'NOTES']]} intro={intro} count={notes.length} countLabel={notes.length === 1 ? 'Post' : 'Posts'} />
 
   <section class="cards" aria-label="Posts">
     {notes.map((note) => (
@@ -26,6 +27,7 @@ const intro = 'A place to write about things I find important and want to think 
           {(note.tags ?? []).map((t) => <span>[{t}]</span>)}
         </span>
         <span class="card__body">
+          <span class="card__icon"><PieceIcon slug={note.slug} /></span>
           <span class="card__title">{note.title}</span>
           <span class="card__dek">{note.dek}</span>
         </span>
@@ -66,7 +68,19 @@ const intro = 'A place to write about things I find important and want to think 
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
-  .card__body { display: flex; flex-direction: column; gap: 14px; padding: 22px 16px 28px; flex: 1; }
+  .card__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 96px;
+    grid-template-areas: "title icon" "dek dek";
+    gap: 14px 18px;
+    align-content: start;
+    padding: 22px 16px 28px;
+    flex: 1;
+  }
+  .card__icon { grid-area: icon; display: block; width: 96px; }
+  .card__title { grid-area: title; }
+  .card__dek { grid-area: dek; }
+  .card:hover :global(.piece-icon) { --icon-bg: var(--black); color: var(--gold); }
   .card__title {
     font-family: var(--font-display);
     font-weight: 700;

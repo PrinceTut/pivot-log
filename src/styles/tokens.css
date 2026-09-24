@@ -22,7 +22,7 @@
   --font-display: "aktiv-grotesk", "Inter Tight", "Helvetica Neue", Arial, sans-serif;
   --font-body: var(--font-display);
   --font-pixel: "lores-12", "Redaction 35", Georgia, serif;
-  --font-mono: "Victor Mono", Menlo, Consolas, monospace;
+  --font-mono: "Victor Mono", monospace; /* Victor Mono only; generic fallback is a last resort if the file fails */
   --font-ui: "Helvetica Neue", "Inter Tight", Arial, sans-serif;
   --font-serif: var(--font-body);   /* legacy alias: body is now the grotesk */
   --font-sans: var(--font-display); /* legacy alias */

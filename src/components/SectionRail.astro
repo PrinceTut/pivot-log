@@ -36,7 +36,9 @@
 </style>
 
 <script>
+  let off: (() => void) | null = null;
   function setupRail() {
+    off?.(); off = null;
     const rail = document.querySelector<HTMLElement>('.rail');
     if (!rail) return;
     const article = rail.closest('article');
@@ -64,8 +66,11 @@
       heads.forEach((h, i) => { if (h.getBoundingClientRect().top <= line) current = i; });
       links.forEach((l, k) => l.classList.toggle('is-active', k === current));
     };
-    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+    window.addEventListener('scroll', onScroll, { passive: true });
     update();
+    off = () => window.removeEventListener('scroll', onScroll);
   }
   document.addEventListener('astro:page-load', setupRail);
+  document.addEventListener('astro:before-swap', () => { off?.(); off = null; });
 </script>
