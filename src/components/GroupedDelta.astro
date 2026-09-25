@@ -1,0 +1,69 @@
+---
+// Score change vs each chunker's own plain retrieval, grouped by technique.
+// Colour carries direction only (positive / negative), as elsewhere on the site.
+interface Props {
+  chunkers: { key: string; name: string }[];
+  techniques: { name: string; values: number[] }[];
+  caption: string;
+}
+const { chunkers, techniques, caption } = Astro.props;
+const MAX = 6, MIN = -4, SPAN = MAX - MIN;
+const zeroFromBottom = (-MIN / SPAN) * 100;
+const ticks = [4, 2, 0, -2];
+const sign = (v: number) => (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v).toFixed(2);
+---
+
+<figure class="gd viz">
+  <div class="gd__groups">
+    {techniques.map((t) => (
+      <div class="gd__group">
+        <p class="gd__tech">{t.name}</p>
+        <div class="gd__plot" role="img" aria-label={`${t.name}: ` + t.values.map((v, i) => `${chunkers[i].name} ${sign(v)}`).join(', ')}>
+          {ticks.map((tk) => (
+            <span class:list={['gd__tick', { 'gd__tick--zero': tk === 0 }]} style={`bottom:${((tk - MIN) / SPAN) * 100}%`}>
+              <span class="gd__ticklabel">{tk === 0 ? '0' : sign(tk).replace('.00', '')}</span>
+            </span>
+          ))}
+          <div class="gd__bars">
+            {t.values.map((v, i) => (
+              <span class="gd__slot" title={`${t.name} on ${chunkers[i].name}: ${sign(v)} points`}>
+                <span
+                  class:list={['gd__bar', v >= 0 ? 'gd__bar--pos' : 'gd__bar--neg']}
+                  style={v >= 0
+                    ? `bottom:${zeroFromBottom}%; height:${(v / SPAN) * 100}%`
+                    : `top:${100 - zeroFromBottom}%; height:${(-v / SPAN) * 100}%`}
+                />
+              </span>
+            ))}
+          </div>
+        </div>
+        <div class="gd__keys" aria-hidden="true">{chunkers.map((c) => <span>{c.key}</span>)}</div>
+      </div>
+    ))}
+  </div>
+  <p class="gd__legend">In every group, left to right: {chunkers.map((c, i) => <span><b>{c.key}</b> {c.name}{i < chunkers.length - 1 ? ',' : '.'} </span>)}</p>
+  <figcaption>{caption}</figcaption>
+</figure>
+
+<style>
+  .gd { margin: var(--space-8) 0; padding-top: var(--space-4); border-top: var(--rule); }
+  .gd__groups { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+  .gd__tech { margin: 0 0 8px; font-family: var(--font-display); font-weight: 700; font-size: 0.9375rem; line-height: 1.2; min-height: 2.4em; }
+  .gd__plot { position: relative; height: 190px; background: var(--paper); }
+  .gd__tick { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed var(--line); }
+  .gd__tick--zero { border-top: 2px solid var(--black); }
+  .gd__ticklabel { position: absolute; left: 0; top: -15px; font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); }
+  .gd__bars { position: absolute; inset: 0 0 0 26px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .gd__slot { position: relative; }
+  .gd__bar { position: absolute; left: 0; right: 0; }
+  .gd__bar--pos { background: var(--positive); }
+  .gd__bar--neg { background: var(--negative); }
+  .gd__keys { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 6px 0 0 26px; font-family: var(--font-mono); font-size: 10px; text-align: center; }
+  .gd__legend { margin: var(--space-4) 0 0; font-size: 0.875rem; line-height: 1.5; }
+  .gd__legend b { font-family: var(--font-mono); font-weight: 700; }
+  .gd figcaption { margin-top: var(--space-3); }
+  @media (max-width: 639px) {
+    .gd__groups { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-6); }
+    .gd__plot { height: 150px; }
+  }
+</style>

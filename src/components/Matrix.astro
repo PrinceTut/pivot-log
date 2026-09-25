@@ -19,7 +19,7 @@ interface Props {
 const { caption, columns, rows } = Astro.props;
 
 // Minimal styling: no background fill, just a thin border indicating sign.
-// (Reversed from the earlier continuous-heat-scale approach — user found
+// (Reversed from the earlier continuous-heat-scale approach; user found
 // the solid color fills too visually loud.)
 function cellStyle(value: number) {
   if (value > 0) return 'border-bottom-color: var(--positive);';
@@ -45,7 +45,7 @@ function formatValue(value: number) {
     <tbody>
       {rows.map((row) => (
         <tr>
-          <th scope="row">{row.label} &mdash; {row.plainScore}</th>
+          <th scope="row"><span class="rowname">{row.label}</span><span class="rowscore">{row.plainScore}</span></th>
           {row.cells.map((cell, ci) => (
             <td>
               <button
@@ -87,6 +87,8 @@ function formatValue(value: number) {
     letter-spacing: 0.04em;
     padding-bottom: 4px;
   }
+  .rowname, .rowscore { display: block; }
+  .rowscore { font-family: var(--font-mono); font-weight: 400; font-size: 11px; text-transform: none; margin-top: 2px; }
   .matrix tbody th {
     font-family: var(--font-display);
     font-size: 12px;
@@ -137,7 +139,7 @@ function formatValue(value: number) {
 </style>
 
 <script>
-  // Progressive enhancement only — the notes are only reachable this way
+  // Progressive enhancement only: the notes are only reachable this way
   // now (the always-visible appendix fallback was removed per request).
   const cells = document.querySelectorAll<HTMLButtonElement>('.matrix-cell');
   const panel = document.getElementById('matrix-panel');

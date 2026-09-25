@@ -159,3 +159,6 @@
 .textbox { margin: 0 0 var(--space-8); font-size: 1rem; line-height: 1.55; }
 .textbox__label { font-family: var(--font-mono); font-weight: 700; font-size: 12px; margin: 0 0 6px !important; }
 .textbox p:last-child { margin-bottom: 0; }
+
+/* Note under a table (the writeup places these after the table) */
+.table-note { font-style: italic; color: var(--ink-soft); font-size: var(--size-caption); line-height: 1.5; margin: calc(-1 * var(--space-6)) 0 var(--space-8) !important; }
