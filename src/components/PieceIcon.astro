@@ -9,6 +9,8 @@
 //     encryption the note says upholds "net banking and UPI".
 //   ultron: agents wired to one central message board; the founding agent
 //     (PHASEONE10841, who established the board) filled.
+//   market-manipulation: a row of stocks as outlined bars; the one name the model keeps
+//     picking is filled and far taller, money concentrating in a single pocket.
 interface Props { slug: string; }
 const { slug } = Astro.props;
 
@@ -20,7 +22,8 @@ const agents = slug === 'ultron'
   ? [[14,14],[50,14],[86,14],[14,50],[86,50],[14,86],[50,86],[86,86]].map(([x, y], i) => ({ x, y, on: i === 0 }))
   : [];
 const isHack = slug === 'end2end-hackerman';
-const known = grid.length > 0 || layers.length > 0 || agents.length > 0 || isHack;
+const bars = slug === 'market-manipulation' ? [30, 44, 36, 88, 40, 26].map((h, i) => ({ x: 8 + i * 14.5, h, on: i === 3 })) : [];
+const known = grid.length > 0 || layers.length > 0 || agents.length > 0 || isHack || bars.length > 0;
 ---
 
 {known && (
@@ -35,6 +38,12 @@ const known = grid.length > 0 || layers.length > 0 || agents.length > 0 || isHac
           <rect x="37" y="38" width="26" height="17" class="cell on" />
           <rect x="46" y="64" width="8" height="10" class="cell" />
           {[0,1,2,3,4,5].map((i) => <rect x={9 + i * 14} y="80" width="12" height="11" class="cell" />)}
+        </g>
+      )}
+      {bars.length > 0 && (
+        <g>
+          {bars.map((b) => <rect x={b.x} y={92 - b.h} width="11" height={b.h} class:list={['cell', { on: b.on }]} />)}
+          <line x1="4" y1="92" x2="96" y2="92" class="line" />
         </g>
       )}
       {agents.length > 0 && (
