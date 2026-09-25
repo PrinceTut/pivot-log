@@ -11,8 +11,9 @@ interface Props {
   intro: string;
   count: number;
   countLabel: string;
+  align?: 'spread' | 'start'; // spread = items pushed to opposite edges; start = left-aligned with a small gap
 }
-const { theme, title, rows, intro, count, countLabel } = Astro.props;
+const { theme, title, rows, intro, count, countLabel, align = 'spread' } = Astro.props;
 ---
 
 <div class="cq">
@@ -20,7 +21,7 @@ const { theme, title, rows, intro, count, countLabel } = Astro.props;
     <h1 class="sr-only">{title}</h1>
     <div class="im__words" aria-hidden="true">
       {rows.map((row) => (
-        <div class="im__row">{row.map((item) => item === '*' ? <StarBadge class="im__star" /> : <span>{item}</span>)}</div>
+        <div class:list={['im__row', `im__row--${align}`]}>{row.map((item) => item === '*' ? <StarBadge class="im__star" /> : <span>{item}</span>)}</div>
       ))}
     </div>
     <div class="im__bottom">
@@ -54,6 +55,7 @@ const { theme, title, rows, intro, count, countLabel } = Astro.props;
     margin-top: calc(40 * var(--u));
     padding-left: calc(6 * var(--u));
   }
+  .im__row--start { justify-content: flex-start; gap: calc(44 * var(--u)); }
   .im__row :global(.im__star) { flex: none; width: calc(215 * var(--u)); height: calc(215 * var(--u)); }
   .im__intro {
     margin: 0;
@@ -85,6 +87,7 @@ const { theme, title, rows, intro, count, countLabel } = Astro.props;
   @media (max-width: 899px) {
     .im { padding: 12px var(--gutter) 32px; }
     .im__row { font-size: 16vw; line-height: 0.86; }
+    .im__row--start { font-size: 14.5vw; gap: 3vw; }
     .im__bottom { grid-template-columns: 1fr auto; gap: 16px; margin-top: 16px; padding-left: 0; }
     .im__row :global(.im__star) { width: 11vw; height: 11vw; }
     .im__intro { grid-column: 1 / -1; font-size: 21px; line-height: 19px; }

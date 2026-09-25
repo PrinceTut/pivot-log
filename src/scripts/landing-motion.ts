@@ -7,15 +7,15 @@ gsap.registerPlugin(ScrollTrigger);
 type Pt = { x: number; y: number };
 type Box = { x: number; y: number; w: number; h: number };
 
-const PHASE = { hero: 1.5, a: 5, white: 1, prism: 2, b: 3 };
+const PHASE = { hero: 1.5, a: 2.5, white: 0.75, prism: 2, rise: 1 };
 const START = {
   a: PHASE.hero,
   white: PHASE.hero + PHASE.a,
   prism: PHASE.hero + PHASE.a + PHASE.white,
-  b: PHASE.hero + PHASE.a + PHASE.white + PHASE.prism,
+  rise: PHASE.hero + PHASE.a + PHASE.white + PHASE.prism,
 };
-const TOTAL = START.b + PHASE.b;
-const STEPS_PER_SCREEN = 12;
+const TOTAL = START.rise + PHASE.rise;
+const MAX_TILT = 20;
 const FOOTER_H = 96;
 const PIN_QUERY = '(min-width: 900px) and (prefers-reduced-motion: no-preference)';
 
@@ -23,8 +23,8 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const seg = (v: number, a: number, b: number) => clamp01((v - a) / (b - a));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const lerpPt = (p: Pt, q: Pt, t: number): Pt => ({ x: lerp(p.x, q.x, t), y: lerp(p.y, q.y, t) });
-const smooth = (t: number) => t * t * (3 - 2 * t);
-const quant = (v: number, n: number) => Math.min(1, Math.floor(v * n + 1e-6) / n);
+const bump = (v: number, a: number, b: number) => (v > a && v < b ? Math.sin(Math.PI * seg(v, a, b)) : 0);
+const easeInOut = (t: number) => 0.5 - 0.5 * Math.cos(Math.PI * t);
 const center = (b: Box): Pt => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
 const rotateAround = (p: Pt, c: Pt, ang: number): Pt => {
   const s = Math.sin(ang), co = Math.cos(ang), dx = p.x - c.x, dy = p.y - c.y;
@@ -46,33 +46,29 @@ function rng(seed: number) {
   };
 }
 function faceAt(p: number) {
-  if (p < 0.2) return 0;
-  if (p < 0.4) return smooth((p - 0.2) / 0.2);
-  if (p < 0.6) return 1;
-  if (p < 0.8) return 1 + smooth((p - 0.6) / 0.2);
+  if (p < 0.08) return 0;
+  if (p < 0.46) return easeInOut((p - 0.08) / 0.38);
+  if (p < 0.54) return 1;
+  if (p < 0.92) return 1 + easeInOut((p - 0.54) / 0.38);
   return 2;
 }
 
-// Frame schedules: [start, frame]; -1 = hidden.
-const FRAMES_A: [number, number][] = [[0, 0], [0.02, 1], [0.04, 2], [0.06, 3], [0.09, 4], [0.12, 5], [0.16, 6], [0.21, 7], [0.27, 8], [0.32, 9], [0.40, 10], [0.80, 11], [0.88, 0]];
-const FRAMES_B: [number, number][] = [[0, 0], [0.02, 1], [0.05, 2], [0.08, 3], [0.10, 4], [0.16, 5], [0.22, 6], [0.28, 7], [0.34, 8], [0.40, 9], [0.46, 10], [0.52, -1], [0.62, 10], [0.80, 11], [0.90, 0]];
+// Frame schedule for Sequence A: [start, frame].
+const FRAMES_A: [number, number][] = [[0, 0], [0.02, 1], [0.05, 2], [0.08, 3], [0.12, 4], [0.16, 5], [0.2, 6], [0.23, 7], [0.26, 8], [0.28, 9], [0.4, 10], [0.78, 11], [0.88, 0]];
 const frameAt = (v: number, table: [number, number][]) => {
   let f = table[0][1];
   for (const [start, frame] of table) if (v >= start) f = frame;
   return f;
 };
-// Stand-in poses, used only while a frame still reuses the F00 artwork.
-const STAND_IN_FLIP: Record<number, number> = { 6: 0.55, 7: 0.12, 8: -0.55, 9: -1, 10: -1, 11: -1 };
-const STAND_IN_SQUASH: Record<number, number> = { 1: 0.97, 2: 0.9, 3: 1.06, 4: 0.94, 11: 0.92 };
-const STAND_IN_LEAN: Record<number, number> = { 9: -14, 10: -24, 11: -6 };
-const isStandIn = (f: number) => f > 0 && FRAMES[f] === FRAMES[0];
+// While a frame still reuses the F00 artwork, 3D tilt and squash stand in for the missing pose.
+const isStandIn = (f: number) => FRAMES[f] === FRAMES[0];
 
 interface Geo {
   W: number; H: number; foot: Box; sL: number; sC: number;
   L: Pt; C: Pt; Cp: Pt; S: Pt; F: Pt; seg1: Pt[]; seg2: Pt[];
   trail: Pt[]; lens: number[]; iS: number; iCp: number; hole: Pt; footTop: number;
 }
-interface Pose { p: Pt; s: number; frame: number; lean: number; }
+interface Pose { p: Pt; s: number; frame: number; rz: number; ry: number; sy: number; }
 
 let mm: gsap.MatchMedia | null = null;
 let framesReady = false;
@@ -97,12 +93,13 @@ function setup() {
   const footSurfer = document.getElementById('foot-surfer');
   const trail = document.getElementById('fx-trail') as SVGPathElement | null;
   const trailInk = document.getElementById('fx-trail-ink') as SVGPathElement | null;
+  const trailG = document.getElementById('fx-trail-g');
   const krackleG = document.getElementById('fx-krackle');
   const speedG = document.getElementById('fx-speed');
   const burst = document.getElementById('fx-burst') as SVGPolygonElement | null;
   const fx = document.getElementById('fx') as SVGSVGElement | null;
   const warp = document.getElementById('bh-warp-map');
-  if (!stage || !hero || !finale || !prism || !halvesEl || !actor || !corner || !cornerType || !footSurfer || !trail || !trailInk || !krackleG || !speedG || !burst || !fx || !warp) return;
+  if (!stage || !hero || !finale || !prism || !halvesEl || !actor || !corner || !cornerType || !footSurfer || !trail || !trailInk || !trailG || !krackleG || !speedG || !burst || !fx || !warp) return;
 
   const base = (stage.dataset.base ?? '/').replace(/\/?$/, '/');
   void preloadFrames(base);
@@ -168,7 +165,7 @@ function setup() {
       const L = center(logo), C = center(cornerSlot), F = center(foot);
       const S = { x: 0.52 * W, y: 0.8 * H };
       const Cp = { x: C.x + 0.06 * W, y: C.y + 0.09 * H };
-      const seg1 = [L, { x: L.x + 0.3 * W, y: L.y + 0.02 * H }, { x: S.x + 0.28 * W, y: S.y + 0.02 * H }, S];
+      const seg1 = [L, { x: L.x - 0.08 * W, y: L.y + 0.15 * H }, { x: S.x + 0.12 * W, y: S.y - 0.05 * H }, S];
       const seg2 = [S, { x: S.x - 0.1 * W, y: S.y - 0.04 * H }, { x: Cp.x + 0.32 * W, y: Cp.y + 0.26 * H }, Cp];
       const E = { x: S.x + 0.03 * W, y: H + 80 }, T = { x: Cp.x - 0.1 * W, y: -160 };
       const pts: Pt[] = [E, S];
@@ -194,149 +191,157 @@ function setup() {
       trail!.setAttribute('d', d);
       trailInk!.setAttribute('d', d);
       halves.forEach((h) => { h.style.transformOrigin = `${g!.hole.x}px ${g!.hole.y}px`; });
-      lastKey = '';
+      lastKey = ''; lastS = -1; clipKey = '';
+    }
+
+    // Flight progress: one eased curve over the swoop down and the sweep up (no stop at the bottom).
+    const flightV = (a: number) => easeInOut(seg(a, 0.28, 0.62));
+    const SPLIT = 0.45;
+
+    function pathAt(a: number): { p: Pt; s: number } {
+      const G = g!;
+      if (a < 0.28) {
+        const lift = a < 0.12 ? Math.sin(Math.PI * seg(a, 0.025, 0.1)) * 0.5 * G.foot.h * G.sL : 0;
+        return { p: { x: G.L.x, y: G.L.y - lift }, s: G.sL * (1 + 0.06 * easeInOut(seg(a, 0.12, 0.2))) };
+      }
+      if (a < 0.62) {
+        const v = flightV(a);
+        if (v < SPLIT) { const u = v / SPLIT; return { p: cubic(G.seg1, u), s: G.sL * lerp(1.06, 1.25, u) }; }
+        const u = (v - SPLIT) / (1 - SPLIT);
+        return { p: cubic(G.seg2, u), s: G.sL * lerp(1.25, 0.7, u) };
+      }
+      if (a < 0.78) {
+        const bob = Math.sin(seg(a, 0.62, 0.78) * Math.PI * 2) * 0.008 * G.H;
+        return { p: { x: G.Cp.x, y: G.Cp.y + bob }, s: G.sL * 0.7 };
+      }
+      const u = easeInOut(seg(a, 0.78, 0.92));
+      return { p: lerpPt(G.Cp, G.C, u), s: lerp(G.sL * 0.7, G.sC, u) };
     }
 
     function poseA(a: number): Pose {
-      const G = g!;
+      const { p, s } = pathAt(a);
       const frame = frameAt(a, FRAMES_A);
-      const hop = a >= 0.02 && a < 0.11 ? Math.sin(Math.PI * seg(a, 0.02, 0.11)) : 0;
-      if (a < 0.32) {
-        const s = G.sL * (1 + 0.08 * smooth(seg(a, 0.11, 0.16)));
-        return { p: { x: G.L.x, y: G.L.y - hop * 0.45 * G.foot.h * G.sL }, s, frame, lean: 0 };
+      // Direction of travel (numerical derivative), used for tilt and bank while flying.
+      const q0 = pathAt(Math.max(0, a - 0.002)).p, q1 = pathAt(Math.min(1, a + 0.002)).p;
+      const vx = q1.x - q0.x, vy = q1.y - q0.y, vl = Math.hypot(vx, vy);
+      const dirX = vl > 1e-4 ? vx / vl : -1, dirY = vl > 1e-4 ? vy / vl : 0;
+      const flyRy = MAX_TILT * -dirX, flyRz = 14 * dirY;
+      let ry: number, rz: number;
+      if (a < 0.12) { ry = 0; rz = 0; }
+      else if (a < 0.2) { ry = 4 * easeInOut(seg(a, 0.12, 0.2)); rz = 0; }
+      else if (a < 0.28) { const t = easeInOut(seg(a, 0.2, 0.28)); ry = lerp(4, 18, t); rz = lerp(0, -6, t); }
+      else if (a < 0.62) { const t = easeInOut(seg(a, 0.28, 0.34)); ry = lerp(18, flyRy, t); rz = lerp(-6, flyRz, t); }
+      else {
+        const endRy = MAX_TILT, t = easeInOut(seg(a, 0.62, 0.9));
+        ry = lerp(endRy, 0, t); rz = lerp(-8, 0, easeInOut(seg(a, 0.62, 0.74)));
       }
-      if (a < 0.46) { const u = seg(a, 0.32, 0.46); return { p: cubic(G.seg1, u), s: G.sL * lerp(1.08, 1.3, u), frame, lean: 0 }; }
-      if (a < 0.62) { const u = seg(a, 0.46, 0.62); return { p: cubic(G.seg2, u), s: G.sL * lerp(1.3, 0.75, u), frame, lean: 0 }; }
-      if (a < 0.8) {
-        const bob = Math.sin(seg(a, 0.62, 0.8) * Math.PI * 2) * 0.01 * G.H;
-        return { p: { x: G.Cp.x, y: G.Cp.y + bob }, s: G.sL * 0.75, frame, lean: 0 };
-      }
-      const u = smooth(seg(a, 0.8, 0.92));
-      return { p: lerpPt(G.Cp, G.C, u), s: lerp(G.sL * 0.75, G.sC, u), frame, lean: 0 };
+      ry = Math.max(-MAX_TILT, Math.min(MAX_TILT, ry));
+      const sy = 1 - 0.07 * bump(a, 0, 0.025) + 0.05 * bump(a, 0.025, 0.1) - 0.06 * bump(a, 0.1, 0.135) - 0.05 * bump(a, 0.9, 0.96);
+      return { p, s, frame, rz, ry, sy };
     }
 
-    function poseB(b: number): Pose {
-      const G = g!;
-      const frame = frameAt(b, FRAMES_B);
-      if (b < 0.1) {
-        const hop = b >= 0.02 ? Math.sin(Math.PI * seg(b, 0.02, 0.1)) : 0;
-        return { p: { x: G.C.x + seg(b, 0.02, 0.1) * 0.02 * G.W, y: G.C.y - hop * 0.9 * G.foot.h * G.sC }, s: G.sC, frame, lean: 0 };
-      }
-      const P0 = { x: G.C.x + 0.02 * G.W, y: G.C.y };
-      const A0 = { x: G.C.x + 0.07 * G.W, y: G.C.y + 0.1 * G.H };
-      if (b < 0.4) { const u = seg(b, 0.1, 0.4); return { p: rotateAround(P0, A0, u * 1.3 * Math.PI), s: lerp(G.sC, G.sC * 2.6, u), frame, lean: 0 }; }
-      if (b < 0.52) {
-        const Pa = rotateAround(P0, A0, 1.3 * Math.PI), u = seg(b, 0.4, 0.52);
-        return { p: lerpPt(Pa, { x: -0.18 * G.W, y: -0.22 * G.H }, u * u), s: lerp(G.sC * 2.6, G.sC * 4, u), frame, lean: 0 };
-      }
-      if (b < 0.62) return { p: G.C, s: G.sC, frame: -1, lean: 0 };
-      if (b < 0.8) { const u = seg(b, 0.62, 0.8); return { p: lerpPt({ x: G.F.x - 0.04 * G.W, y: -0.75 * G.H }, G.F, u * u), s: 1, frame, lean: 0 }; }
-      return { p: G.F, s: 1, frame, lean: 0 };
-    }
-
-    function burstAt(c: Pt, R: number, step: number) {
+    function burstAt(c: Pt, R: number, spin: number, opacity: number) {
       const pts: string[] = [];
       for (let i = 0; i < 32; i++) {
-        const ang = (i / 32) * Math.PI * 2 + step * 0.12, rr = i % 2 === 0 ? R : R * 0.55;
+        const ang = (i / 32) * Math.PI * 2 + spin, rr = i % 2 === 0 ? R : R * 0.55;
         pts.push(`${(c.x + Math.cos(ang) * rr).toFixed(1)},${(c.y + Math.sin(ang) * rr).toFixed(1)}`);
       }
       burst!.setAttribute('points', pts.join(' '));
       burst!.style.visibility = 'visible';
+      burst!.style.opacity = opacity.toFixed(3);
     }
 
+    let lastS = -1;
+    let clipKey = '';
     function renderSeq(sm: number) {
       if (!g) return;
+      if (Math.abs(sm - lastS) < 1e-5 && lastKey === String(framesReady)) return;
+      lastS = sm; lastKey = String(framesReady);
       const G = g;
-      const nA = PHASE.a * STEPS_PER_SCREEN, nB = PHASE.b * STEPS_PER_SCREEN;
-      const a = quant(seg(sm, START.a, START.a + PHASE.a), nA);
-      const b = quant(seg(sm, START.b, START.b + PHASE.b), nB);
-      const key = `${a}|${b}|${framesReady}`;
-      if (key === lastKey) return;
-      lastKey = key;
-      const stepA = Math.round(a * nA), stepB = Math.round(b * nB);
+      const a = seg(sm, START.a, START.a + PHASE.a);
 
-      stage!.style.setProperty('--bigtype', String(1 - seg(a, 0.4, 0.85)));
-      const cornerO = seg(a, 0.6, 0.95) * (1 - seg(b, 0.8, 0.95));
+      prism!.style.setProperty('--spin', `${(-120 * faceAt(seg(sm, START.prism, START.prism + PHASE.prism))).toFixed(2)}deg`);
+      const rise = seg(sm, START.rise, START.rise + 0.85);
+      stage!.style.setProperty('--rise', (1 - Math.pow(1 - rise, 3)).toFixed(4));
+
+      stage!.style.setProperty('--bigtype', String(1 - seg(a, 0.35, 0.8)));
+      const cornerO = seg(a, 0.6, 0.92);
       stage!.style.setProperty('--corner-o', cornerO.toFixed(3));
       corner!.classList.toggle('is-live', cornerO > 0.5);
-      stage!.classList.toggle('is-launched', a > 0);
+      stage!.classList.toggle('is-launched', a > 0.001);
       stage!.classList.toggle('is-split', a >= 0.64);
-      const landed = b >= 0.999;
-      stage!.classList.toggle('is-landed', landed);
 
-      // Actor
-      const pose = b > 0 ? poseB(b) : poseA(a);
-      const show = a > 0 && pose.frame >= 0 && !landed;
+      // Actor: movement on the outer box, pose (tilt, bank, squash) on the inner one
+      const pose = poseA(a);
+      const show = a > 0.001;
       actor!.classList.toggle('is-on', show);
       if (show) {
         const f = framesReady ? pose.frame : 0;
         imgs.forEach((im, i) => im.classList.toggle('is-on', i === f));
         if (num) num.textContent = `F${String(pose.frame).padStart(2, '0')}`;
         const stand = isStandIn(f);
-        const flip = stand && !(b >= 0.62) ? (STAND_IN_FLIP[f] ?? 1) : 1;
-        const squash = stand ? (STAND_IN_SQUASH[f] ?? 1) : 1;
-        const lean = stand ? (STAND_IN_LEAN[f] ?? 0) : 0;
-        actor!.style.transform = `translate(${(pose.p.x - G.foot.w / 2).toFixed(1)}px, ${(pose.p.y - G.foot.h / 2).toFixed(1)}px) scale(${pose.s.toFixed(4)})`;
-        poseEl.style.transform = `rotate(${lean}deg) scale(${flip}, ${squash})`;
+        const ry = stand ? pose.ry : 0, sy = stand ? pose.sy : 1, sx = stand ? 2 - pose.sy : 1;
+        actor!.style.transform = `translate(${(pose.p.x - G.foot.w / 2).toFixed(2)}px, ${(pose.p.y - G.foot.h / 2).toFixed(2)}px) scale(${pose.s.toFixed(5)})`;
+        poseEl.style.transform = `perspective(1400px) rotateY(${ry.toFixed(2)}deg) rotateZ(${pose.rz.toFixed(2)}deg) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
       }
 
-      // Contrail = the tear
+      // Contrail = the tear, drawn behind the board during the sweep up
       const total = G.lens[G.lens.length - 1];
+      const v = flightV(a);
       let reveal = 0;
-      if (a >= 0.46) {
-        const u = seg(a, 0.46, 0.62);
+      if (a >= 0.28 && v >= SPLIT) {
+        const u = (v - SPLIT) / (1 - SPLIT);
         const idx = G.iS + u * (G.iCp - G.iS), i0 = Math.floor(idx), fr = idx - i0;
         reveal = lerp(G.lens[i0], G.lens[Math.min(i0 + 1, G.lens.length - 1)], fr);
-        if (a >= 0.62) reveal = lerp(G.lens[G.iCp], total, seg(a, 0.62, 0.64));
+        if (a >= 0.62) reveal = lerp(G.lens[G.iCp], total, easeInOut(seg(a, 0.62, 0.645)));
       }
-      const w = lerp(Math.max(10, 0.012 * G.W), 0.06 * G.W, seg(a, 0.62, 0.66));
-      const trailO = 1 - seg(a, 0.72, 0.78);
-      [trail!, trailInk!].forEach((p) => {
-        p.style.strokeDasharray = `${total} ${total}`;
-        p.style.strokeDashoffset = `${total - reveal}`;
-        p.style.opacity = reveal > 0 ? String(trailO) : '0';
+      const w = lerp(Math.max(10, 0.012 * G.W), 0.06 * G.W, easeInOut(seg(a, 0.62, 0.66)));
+      const trailO = 1 - seg(a, 0.72, 0.8);
+      [trail!, trailInk!].forEach((pth) => {
+        pth.style.strokeDasharray = `${total} ${total}`;
+        pth.style.strokeDashoffset = `${total - reveal}`;
       });
+      trailG!.style.opacity = reveal > 0 ? trailO.toFixed(3) : '0';
       trail!.style.strokeWidth = `${w}`;
       trailInk!.style.strokeWidth = `${w + 6}`;
 
       // Yellow halves and black-hole collapse
-      const split = a >= 0.64 && a < 0.8;
+      const split = a >= 0.64 && a < 0.82;
       if (split) {
-        const off = (sign: number) => {
-          const out: string[] = [];
-          for (let i = 0; i < G.trail.length; i++) {
-            const p = G.trail[i], q = G.trail[Math.min(i + 1, G.trail.length - 1)], o = G.trail[Math.max(i - 1, 0)];
+        const key = w.toFixed(1);
+        if (key !== clipKey) {
+          clipKey = key;
+          const off = (sign: number) => G.trail.map((pt, i) => {
+            const q = G.trail[Math.min(i + 1, G.trail.length - 1)], o = G.trail[Math.max(i - 1, 0)];
             const dx = q.x - o.x, dy = q.y - o.y, len = Math.hypot(dx, dy) || 1;
-            out.push(`${(p.x + sign * (dy / len) * (w / 2)).toFixed(1)}px ${(p.y - sign * (dx / len) * (w / 2)).toFixed(1)}px`);
-          }
-          return out;
-        };
-        const left = off(1), right = off(-1);
-        const e0 = G.trail[0], t0 = G.trail[G.trail.length - 1];
-        halves[0].style.clipPath = `polygon(${left.join(',')}, ${-3 * G.W}px ${t0.y}px, ${-3 * G.W}px ${e0.y}px)`;
-        halves[1].style.clipPath = `polygon(${right.join(',')}, ${4 * G.W}px ${t0.y}px, ${4 * G.W}px ${e0.y}px)`;
-        const k = seg(a, 0.66, 0.8);
+            return `${(pt.x + sign * (dy / len) * (w / 2)).toFixed(1)}px ${(pt.y - sign * (dx / len) * (w / 2)).toFixed(1)}px`;
+          });
+          const e0 = G.trail[0], t0 = G.trail[G.trail.length - 1];
+          halves[0].style.clipPath = `polygon(${off(1).join(',')}, ${-3 * G.W}px ${t0.y}px, ${-3 * G.W}px ${e0.y}px)`;
+          halves[1].style.clipPath = `polygon(${off(-1).join(',')}, ${4 * G.W}px ${t0.y}px, ${4 * G.W}px ${e0.y}px)`;
+        }
+        const k = easeInOut(seg(a, 0.66, 0.82));
         halves.forEach((h, i) => {
           const sign = i === 0 ? -1 : 1;
-          h.style.transform = `rotate(${sign * 35 * k}deg) scale(${1 - 0.96 * k})`;
+          h.style.transform = `rotate(${(sign * 35 * k).toFixed(3)}deg) scale(${(1 - 0.96 * k).toFixed(4)})`;
           h.style.opacity = String(1 - seg(k, 0.75, 1));
-          h.style.filter = k > 0 ? 'url(#bh-warp)' : 'none';
+          h.style.filter = k > 0.001 ? 'url(#bh-warp)' : 'none';
           h.style.visibility = 'visible';
         });
-        warp!.setAttribute('scale', String(Math.round(90 * k)));
+        warp!.setAttribute('scale', String(Math.round((90 * k) / 6) * 6));
       } else {
         halves.forEach((h) => { h.style.visibility = 'hidden'; });
       }
 
       // Krackle
-      const kk = seg(a, 0.66, 0.8), krackleOn = a >= 0.63 && a < 0.8;
+      const kk = easeInOut(seg(a, 0.66, 0.82)), krackleOn = a >= 0.63 && a < 0.82;
       dots.forEach((d) => {
         const visible = krackleOn && (a < 0.66 ? d.appear < 0.2 : kk >= d.appear * 0.8 && kk < 0.97);
         if (!visible) { d.el.setAttribute('r', '0'); return; }
-        const L = d.along * total;
-        let i = 1; while (i < G.lens.length - 1 && G.lens[i] < L) i++;
+        const Ld = d.along * total;
+        let i = 1; while (i < G.lens.length - 1 && G.lens[i] < Ld) i++;
         const p0 = G.trail[i - 1], p1 = G.trail[i], dx = p1.x - p0.x, dy = p1.y - p0.y, ln = Math.hypot(dx, dy) || 1;
-        const on = lerpPt(p0, p1, (L - G.lens[i - 1]) / ((G.lens[i] - G.lens[i - 1]) || 1));
+        const on = lerpPt(p0, p1, (Ld - G.lens[i - 1]) / ((G.lens[i] - G.lens[i - 1]) || 1));
         const dist = w / 2 + 4 + d.off * 0.22 * G.W;
         const base0 = { x: on.x + d.side * (dy / ln) * dist, y: on.y - d.side * (dx / ln) * dist };
         const pulled = rotateAround(lerpPt(base0, G.hole, kk * kk), G.hole, d.side * kk * d.spin);
@@ -346,34 +351,31 @@ function setup() {
         d.el.setAttribute('r', rad.toFixed(1));
       });
 
-      // Speed lines (flight only)
-      const flyingA = b === 0 && a >= 0.32 && a < 0.62;
-      const flyingB = b > 0 && ((b >= 0.4 && b < 0.52) || (b >= 0.62 && b < 0.8));
-      if (show && (flyingA || flyingB)) {
-        const prev = b > 0 ? poseB(Math.max(0, b - 1 / nB)) : poseA(Math.max(0, a - 1 / nA));
-        let vx = pose.p.x - prev.p.x, vy = pose.p.y - prev.p.y; const vl = Math.hypot(vx, vy) || 1; vx /= vl; vy /= vl;
-        const size = G.foot.w * pose.s, jitter = (stepA + stepB) % 3;
+      // Speed lines while flying
+      if (show && a > 0.29 && a < 0.61) {
+        const q0 = pathAt(Math.max(0, a - 0.004)).p;
+        let vx = pose.p.x - q0.x, vy = pose.p.y - q0.y; const vl = Math.hypot(vx, vy) || 1; vx /= vl; vy /= vl;
+        const size = G.foot.w * pose.s, fade = Math.min(seg(a, 0.29, 0.33), 1 - seg(a, 0.57, 0.61));
         lines.forEach((l, i) => {
-          const o = (i - 2.5) * 0.16 * size, back = 0.45 * size + (i % 2) * 0.12 * size + jitter * 4, len = 0.5 * size + ((i * 37) % 5) * 0.06 * size;
-          const sx = pose.p.x - vx * back + -vy * o, sy = pose.p.y - vy * back + vx * o;
-          l.setAttribute('x1', sx.toFixed(1)); l.setAttribute('y1', sy.toFixed(1));
-          l.setAttribute('x2', (sx - vx * len).toFixed(1)); l.setAttribute('y2', (sy - vy * len).toFixed(1));
-          l.style.visibility = 'visible';
+          const o = (i - 2.5) * 0.16 * size, back = 0.45 * size + (i % 2) * 0.12 * size, len = 0.5 * size + ((i * 37) % 5) * 0.06 * size;
+          const sx0 = pose.p.x - vx * back - vy * o, sy0 = pose.p.y - vy * back + vx * o;
+          l.setAttribute('x1', sx0.toFixed(1)); l.setAttribute('y1', sy0.toFixed(1));
+          l.setAttribute('x2', (sx0 - vx * len).toFixed(1)); l.setAttribute('y2', (sy0 - vy * len).toFixed(1));
+          l.style.visibility = 'visible'; l.style.opacity = fade.toFixed(3);
         });
       } else lines.forEach((l) => { l.style.visibility = 'hidden'; });
 
-      // Impact bursts
-      if (b === 0 && a >= 0.09 && a < 0.12) burstAt({ x: pose.p.x, y: pose.p.y + 0.3 * G.foot.h * pose.s }, 0.42 * G.foot.w * pose.s, stepA);
-      else if (b >= 0.06 && b < 0.1) burstAt({ x: pose.p.x, y: pose.p.y + 0.3 * G.foot.h * pose.s }, 0.5 * G.foot.w * G.sC, stepB);
-      else if (b >= 0.8 && b < 0.88) burstAt({ x: G.F.x - 0.02 * G.W, y: G.footTop }, 0.16 * G.W, stepB);
-      else burst!.style.visibility = 'hidden';
+      // Landing burst after the hop
+      if (a >= 0.1 && a < 0.145) {
+        const t = seg(a, 0.1, 0.145);
+        burstAt({ x: pose.p.x, y: pose.p.y + 0.3 * G.foot.h * pose.s }, 0.42 * G.foot.w * pose.s * (0.7 + 0.5 * t), t * 0.6, 1 - t);
+      } else burst!.style.visibility = 'hidden';
     }
 
     function renderRaw(s: number) {
       hero!.style.setProperty('--p', seg(s, 0, PHASE.hero).toFixed(4));
       hero!.classList.toggle('is-revealed', seg(s, 0, PHASE.hero) >= 0.7);
       finale!.style.setProperty('--p', seg(s, START.white, START.white + PHASE.white).toFixed(4));
-      prism!.style.setProperty('--spin', `${(-120 * faceAt(seg(s, START.prism, START.prism + PHASE.prism))).toFixed(2)}deg`);
     }
 
     const proxy = { s: 0 };
@@ -389,7 +391,7 @@ function setup() {
     gsap.to(proxy, {
       s: TOTAL,
       ease: 'none',
-      scrollTrigger: { start: () => pin.start, end: () => pin.end, scrub: 0.4, invalidateOnRefresh: true },
+      scrollTrigger: { start: () => pin.start, end: () => pin.end, scrub: 0.6, invalidateOnRefresh: true },
       onUpdate: () => renderSeq(proxy.s),
     });
     layout();
@@ -398,8 +400,8 @@ function setup() {
     renderSeq(proxy.s);
 
     return () => {
-      stage.classList.remove('is-pinned', 'is-launched', 'is-split', 'is-landed');
-      ['--bigtype', '--corner-o'].forEach((v) => stage.style.removeProperty(v));
+      stage.classList.remove('is-pinned', 'is-launched', 'is-split');
+      ['--bigtype', '--corner-o', '--rise'].forEach((v) => stage.style.removeProperty(v));
       hero.style.removeProperty('--p');
       hero.classList.remove('is-revealed');
       finale.style.removeProperty('--p');

@@ -8,9 +8,9 @@ import { REPO_URL } from '../config';
 import { FRAMES, LOGO_SURFER } from '../scripts/landing-frames';
 
 const statements = [
-  'Most of what I build starts as scattered notes and half-formed questions.',
-  'Patterns emerge once I start tracing how the pieces actually connect.',
-  "What's left is a specific, testable claim; not a vibe.",
+  'Driven by curiosity, I usually start with a question.',
+  'Then I spend weekends researching, talking to people, and trying to figure shit out.',
+  'Then I write and build things to make sense of it and share them.',
 ];
 const heroSub = 'Independent projects and write-ups breaking down the LLM space and its components';
 const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100}%; width:${LOGO_SURFER.width * 100}%;`;
@@ -88,8 +88,10 @@ const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100
     <div class="halves" id="halves"></div>
 
     <svg class="fx" id="fx" aria-hidden="true" preserveAspectRatio="none">
-      <path id="fx-trail-ink" class="trail-ink" d="" />
-      <path id="fx-trail" class="trail" d="" />
+      <g id="fx-trail-g" class="trail-g">
+        <path id="fx-trail-ink" class="trail-ink" d="" />
+        <path id="fx-trail" class="trail" d="" />
+      </g>
       <g id="fx-speed" class="speed"></g>
       <g id="fx-krackle" class="krackle"></g>
       <polygon id="fx-burst" class="burst" points="" />
@@ -137,8 +139,9 @@ const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100
   .fx, .corner, .actor { display: none; }
   .stage.is-pinned .fx { display: block; position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; overflow: visible; }
   .defs { position: absolute; width: 0; height: 0; }
-  .trail-ink { fill: none; stroke: var(--black); stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
-  .trail { fill: none; stroke: var(--paper); stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+  .trail-g { opacity: 0; }
+  .trail-ink { fill: none; stroke: var(--black); stroke-linecap: round; stroke-linejoin: round; }
+  .trail { fill: none; stroke: var(--paper); stroke-linecap: round; stroke-linejoin: round; }
   .speed line { stroke: var(--black); stroke-width: 3; stroke-linecap: round; visibility: hidden; }
   .krackle circle { fill: var(--black); }
   .burst { fill: #fff; stroke: var(--black); stroke-width: 4; stroke-linejoin: miter; visibility: hidden; }
@@ -266,13 +269,13 @@ const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100
   .foot-wrap { position: relative; z-index: 2; clip-path: inset(-200vh 0 0 0); }
   .foot-surfer {
     position: absolute;
+    translate: calc((1 - var(--rise, 1)) * 18cqw) calc((1 - var(--rise, 1)) * 75svh);
     top: -30.8svh;
     left: calc(71cqw - 0.46 * 93.6svh);
     height: 93.6svh;
     width: auto;
     pointer-events: none;
   }
-  .stage.is-pinned:not(.is-landed) .foot-surfer { visibility: hidden; }
 
   .st { position: relative; width: calc(1920 * var(--u)); height: calc(560 * var(--u)); }
   .sw, .bar { position: absolute; left: calc(var(--x) * var(--u)); top: calc(var(--y) * var(--u)); }
@@ -297,9 +300,9 @@ const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100
 
   .prism-stage {
     position: absolute;
-    left: calc(680 * var(--u));
+    left: calc(620 * var(--u));
     top: calc(128 * var(--u));
-    width: calc(400 * var(--u));
+    width: calc(520 * var(--u));
     height: calc(114 * var(--u));
     perspective: calc(2400 * var(--u));
   }

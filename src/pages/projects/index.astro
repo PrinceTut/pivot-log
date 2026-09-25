@@ -25,14 +25,14 @@ const intro = "These are exercises I've done to build and break down systems, to
 ---
 
 <BaseLayout title="Projects" description={intro} nav="gold">
-  <IndexMasthead theme="gold" title="Projects" rows={[['PROJ', '*', 'ECTS']]} intro={intro} count={pieces.length} countLabel={pieces.length === 1 ? 'Build' : 'Builds'} />
+  <IndexMasthead theme="gold" title="Projects" rows={[['*', 'PROJECTS']]} align="start" intro={intro} count={pieces.length} countLabel={pieces.length === 1 ? 'Build' : 'Builds'} />
 
   <section class="list" aria-label="Builds">
     {pieces.map((piece, i) => (
       <IndexEntry
         href={`/projects/${piece.slug}`}
         slug={piece.slug}
-        index={i + 1}
+        index={pieces.length - i}
         title={piece.title}
         dek={piece.dek}
         description={descriptions[piece.slug]}
