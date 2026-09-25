@@ -7,12 +7,12 @@ gsap.registerPlugin(ScrollTrigger);
 type Pt = { x: number; y: number };
 type Box = { x: number; y: number; w: number; h: number };
 
-const PHASE = { hero: 1.5, a: 2.5, white: 0.75, prism: 2, rise: 1 };
+const PHASE = { hero: 1.5, a: 2.5, white: 0.75, steps: 1.25, rise: 1 };
 const START = {
   a: PHASE.hero,
   white: PHASE.hero + PHASE.a,
-  prism: PHASE.hero + PHASE.a + PHASE.white,
-  rise: PHASE.hero + PHASE.a + PHASE.white + PHASE.prism,
+  steps: PHASE.hero + PHASE.a + PHASE.white,
+  rise: PHASE.hero + PHASE.a + PHASE.white + PHASE.steps,
 };
 const TOTAL = START.rise + PHASE.rise;
 const MAX_TILT = 20;
@@ -45,14 +45,6 @@ function rng(seed: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-function faceAt(p: number) {
-  if (p < 0.08) return 0;
-  if (p < 0.46) return easeInOut((p - 0.08) / 0.38);
-  if (p < 0.54) return 1;
-  if (p < 0.92) return 1 + easeInOut((p - 0.54) / 0.38);
-  return 2;
-}
-
 // Frame schedule for Sequence A: [start, frame].
 const FRAMES_A: [number, number][] = [[0, 0], [0.02, 1], [0.05, 2], [0.08, 3], [0.12, 4], [0.16, 5], [0.2, 6], [0.23, 7], [0.26, 8], [0.28, 9], [0.4, 10], [0.78, 11], [0.88, 0]];
 const frameAt = (v: number, table: [number, number][]) => {
@@ -85,7 +77,7 @@ function setup() {
   const stage = document.getElementById('stage');
   const hero = document.getElementById('hero');
   const finale = document.getElementById('finale');
-  const prism = document.getElementById('prism');
+  const steps = document.getElementById('steps');
   const halvesEl = document.getElementById('halves');
   const actor = document.getElementById('actor');
   const corner = document.getElementById('corner');
@@ -99,7 +91,7 @@ function setup() {
   const burst = document.getElementById('fx-burst') as SVGPolygonElement | null;
   const fx = document.getElementById('fx') as SVGSVGElement | null;
   const warp = document.getElementById('bh-warp-map');
-  if (!stage || !hero || !finale || !prism || !halvesEl || !actor || !corner || !cornerType || !footSurfer || !trail || !trailInk || !trailG || !krackleG || !speedG || !burst || !fx || !warp) return;
+  if (!stage || !hero || !finale || !steps || !halvesEl || !actor || !corner || !cornerType || !footSurfer || !trail || !trailInk || !trailG || !krackleG || !speedG || !burst || !fx || !warp) return;
 
   const base = (stage.dataset.base ?? '/').replace(/\/?$/, '/');
   void preloadFrames(base);
@@ -260,7 +252,6 @@ function setup() {
       const G = g;
       const a = seg(sm, START.a, START.a + PHASE.a);
 
-      prism!.style.setProperty('--spin', `${(-120 * faceAt(seg(sm, START.prism, START.prism + PHASE.prism))).toFixed(2)}deg`);
       const rise = seg(sm, START.rise, START.rise + 0.85);
       stage!.style.setProperty('--rise', (1 - Math.pow(1 - rise, 3)).toFixed(4));
 
@@ -376,6 +367,7 @@ function setup() {
       hero!.style.setProperty('--p', seg(s, 0, PHASE.hero).toFixed(4));
       hero!.classList.toggle('is-revealed', seg(s, 0, PHASE.hero) >= 0.7);
       finale!.style.setProperty('--p', seg(s, START.white, START.white + PHASE.white).toFixed(4));
+      steps!.style.setProperty('--p', seg(s, START.steps, START.steps + PHASE.steps).toFixed(4));
     }
 
     const proxy = { s: 0 };
@@ -405,7 +397,7 @@ function setup() {
       hero.style.removeProperty('--p');
       hero.classList.remove('is-revealed');
       finale.style.removeProperty('--p');
-      prism.style.removeProperty('--spin');
+      steps.style.removeProperty('--p');
       halvesEl.innerHTML = '';
       krackleG.innerHTML = '';
       speedG.innerHTML = '';

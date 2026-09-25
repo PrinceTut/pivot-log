@@ -7,10 +7,10 @@ import { withBase } from '../utils/url';
 import { REPO_URL } from '../config';
 import { FRAMES, LOGO_SURFER } from '../scripts/landing-frames';
 
-const statements = [
-  'Driven by curiosity, I usually start with a question.',
-  'Then I spend weekends researching, talking to people, and trying to figure shit out.',
-  'Then I write and build things to make sense of it and share them.',
+const steps = [
+  { label: 'Question', text: 'Driven by curiosity, I usually start with a question.' },
+  { label: 'Research', text: 'Then I spend weekends researching, talking to people, and trying to figure shit out.' },
+  { label: 'Build + Share', text: 'Then I write and build things to make sense of it and share them.' },
 ];
 const heroSub = 'Independent projects and write-ups breaking down the LLM space and its components';
 const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100}%; width:${LOGO_SURFER.width * 100}%;`;
@@ -20,35 +20,47 @@ const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100
   <div class="stage" id="stage" data-base={withBase('/')}>
 
     <div class="finale" id="finale">
+      <nav class="fnav rv" style="--a:.02; --b:.20" aria-label="Main">
+        <GlassPill href={withBase('/projects')} label="Projects" size="sm" />
+        <GlassPill href={withBase('/scratchnotes')} label="Scratchnotes" size="sm" />
+        <GlassPill href={REPO_URL} label="Git Repo" size="sm" external />
+      </nav>
       <div class="finale__main">
-        <section class="st" aria-labelledby="st-title">
-          <h2 id="st-title" class="sr-only">A repository of all my tech perspectives</h2>
-          <div class="st__desk" aria-hidden="true">
-            <span class="sw rv" style="--x:55; --y:0; --a:.00; --b:.10">A</span>
-            <span class="bar rv" style="--x:171; --y:22; --w:687; --h:90; --a:.05; --b:.15"></span>
-            <span class="sw sw--r rv" style="--r:290; --y:0; --a:.10; --b:.20">REPOSITORY</span>
-            <span class="st__star-wrap rv" style="--a:.16; --b:.26"><StarBadge fill="white" class="st__star" /></span>
-            <span class="sw sw--r rv" style="--r:78; --y:0; --a:.16; --b:.26">F</span>
-            <span class="bar rv" style="--x:1659; --y:130; --w:182; --h:138; --a:.22; --b:.32"></span>
-            <span class="sw rv" style="--x:55; --y:264; --a:.34; --b:.44">ALL MY</span>
-            <span class="bar rv" style="--x:512; --y:286; --w:234; --h:90; --a:.40; --b:.50"></span>
-            <span class="sw sw--r rv" style="--r:826; --y:264; --a:.44; --b:.54">TECH</span>
-            <span class="bar rv" style="--x:1108; --y:286; --w:466; --h:90; --a:.50; --b:.60"></span>
-            <span class="bar rv" style="--x:60; --y:414; --w:202; --h:90; --a:.54; --b:.64"></span>
-            <span class="sw rv" style="--x:291; --y:396; --a:.58; --b:.68">PERSPECTIVES</span>
-          </div>
-          <div class="prism-stage rv" style="--a:.28; --b:.40">
-            <ul class="prism" id="prism">
-              {statements.map((s, i) => <li class="face" style={`--i:${i}`}>{s}</li>)}
-            </ul>
-          </div>
-          <nav class="st__pills rv" style="--a:.66; --b:.78" aria-label="Explore">
-            <GlassPill href={REPO_URL} label="Git Repo" size="lg" external />
-            <GlassPill href={withBase('/projects')} label="Projects" size="lg" />
-            <GlassPill href={withBase('/scratchnotes')} label="Scratchnotes" size="lg" />
-          </nav>
-          <p class="st__mobile" aria-hidden="true">A <span class="ibar" style="--w:2.4em"></span> Repository of all my <span class="ibar" style="--w:1.2em"></span> tech <span class="ibar" style="--w:1.8em"></span> <span class="ibar" style="--w:1em"></span> perspectives</p>
-        </section>
+        <div class="wp">
+          <section class="st" aria-labelledby="st-title">
+            <h2 id="st-title" class="sr-only">A repository of all my tech perspectives</h2>
+            <div class="st__desk" aria-hidden="true">
+              <span class="sw rv" style="--x:55; --y:0; --a:.10; --b:.22">A</span>
+              <span class="bar rv" style="--x:171; --y:22; --w:722; --h:90; --a:.15; --b:.27"></span>
+              <span class="sw sw--r rv" style="--r:262; --y:0; --a:.20; --b:.32">REPOSITORY</span>
+              <span class="st__star-wrap rv" style="--a:.26; --b:.38"><StarBadge fill="white" class="st__star" /></span>
+              <span class="sw sw--r rv" style="--r:78; --y:0; --a:.26; --b:.38">F</span>
+              <span class="sw rv" style="--x:55; --y:132; --a:.34; --b:.46">ALL MY</span>
+              <span class="bar rv" style="--x:512; --y:154; --w:234; --h:90; --a:.40; --b:.52"></span>
+              <span class="sw sw--r rv" style="--r:826; --y:132; --a:.44; --b:.56">TECH</span>
+              <span class="bar rv" style="--x:1118; --y:154; --w:724; --h:90; --a:.50; --b:.62"></span>
+              <span class="bar rv" style="--x:60; --y:286; --w:202; --h:90; --a:.56; --b:.68"></span>
+              <span class="sw rv" id="st-perspectives" style="--x:291; --y:264; --a:.60; --b:.72">PERSPECTIVES</span>
+              <span class="bar rv" id="st-lastbar" style="--x:1188; --y:286; --w:654; --h:90; --a:.66; --b:.78"></span>
+            </div>
+            <p class="st__mobile" aria-hidden="true">A <span class="ibar" style="--w:2.4em"></span> Repository of all my <span class="ibar" style="--w:1.2em"></span> tech <span class="ibar" style="--w:1.8em"></span> <span class="ibar" style="--w:1em"></span> perspectives <span class="ibar" style="--w:1.4em"></span></p>
+          </section>
+          <ol class="steps" id="steps" aria-label="How I work">
+            {steps.map((step, i) => {
+              const a = i / 3;
+              return (
+                <li class="step">
+                  <span class="step__rule rv-rule" style={`--a:${a.toFixed(3)}; --b:${(a + 0.14).toFixed(3)}`}></span>
+                  <span class="step__num rv" style={`--a:${(a + 0.05).toFixed(3)}; --b:${(a + 0.2).toFixed(3)}`} aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+                  <span class="step__body rv" style={`--a:${(a + 0.1).toFixed(3)}; --b:${(a + 0.28).toFixed(3)}`}>
+                    <span class="step__label">{step.label}</span>
+                    <span class="step__text">{step.text}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
       </div>
       <div class="foot-wrap rv" style="--a:.78; --b:.92">
         <Footer variant="landing" />
@@ -259,25 +271,18 @@ const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100
   /* ---------------- WHITE SECTION + FOOTER ---------------- */
   .finale { --p: 1; position: relative; background: var(--paper); }
   .stage.is-pinned > .finale { display: flex; flex-direction: column; z-index: 1; }
+  .fnav { display: flex; justify-content: flex-end; align-items: center; gap: 10px; height: 70px; padding: 14px var(--gutter) 0; }
+  .stage.is-pinned .fnav { position: absolute; top: 0; left: 0; right: 0; z-index: 5; }
   .finale__main {
-    --u: min(calc(100cqw / 1920), calc((100svh - 246px) / 560));
+    --u: min(calc(100cqw / 1920), calc((100svh - 206px) / 860));
     display: grid;
     place-items: center;
-    padding: 64px 0;
+    padding: 40px 0 72px;
   }
-  .stage.is-pinned .finale__main { flex: 1; padding: 0; }
-  .foot-wrap { position: relative; z-index: 2; clip-path: inset(-200vh 0 0 0); }
-  .foot-surfer {
-    position: absolute;
-    translate: calc((1 - var(--rise, 1)) * 18cqw) calc((1 - var(--rise, 1)) * 75svh);
-    top: -30.8svh;
-    left: calc(71cqw - 0.46 * 93.6svh);
-    height: 93.6svh;
-    width: auto;
-    pointer-events: none;
-  }
+  .stage.is-pinned .finale__main { flex: 1; padding: 70px 0 0; }
+  .wp { width: calc(1920 * var(--u)); }
 
-  .st { position: relative; width: calc(1920 * var(--u)); height: calc(560 * var(--u)); }
+  .st { position: relative; height: calc(400 * var(--u)); }
   .sw, .bar { position: absolute; left: calc(var(--x) * var(--u)); top: calc(var(--y) * var(--u)); }
   .sw {
     font-family: var(--font-display);
@@ -297,53 +302,65 @@ const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100
     height: calc(90 * var(--u));
   }
   .st__star-wrap :global(.st__star) { width: 100%; height: 100%; }
-
-  .prism-stage {
-    position: absolute;
-    left: calc(620 * var(--u));
-    top: calc(128 * var(--u));
-    width: calc(520 * var(--u));
-    height: calc(114 * var(--u));
-    perspective: calc(2400 * var(--u));
-  }
-  .prism {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    transform-style: preserve-3d;
-    transform: translateZ(calc(-600 * var(--u))) rotateY(var(--spin, 0deg));
-  }
-  .face {
-    position: absolute;
-    inset: 0;
-    transform: rotateY(calc(var(--i) * 120deg)) translateZ(calc(600 * var(--u)));
-    font-family: var(--font-display);
-    font-weight: 500;
-    font-size: calc(26 * var(--u));
-    line-height: calc(36 * var(--u));
-    letter-spacing: -0.02em;
-    text-transform: uppercase;
-    text-align: justify;
-    text-align-last: left;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .prism-stage { left: calc(160 * var(--u)); width: calc(1440 * var(--u)); perspective: none; }
-    .prism { display: flex; gap: calc(60 * var(--u)); transform: none; }
-    .face { position: static; transform: none; flex: 1; }
-  }
-  .st__pills {
-    position: absolute;
-    right: calc(79 * var(--u));
-    top: calc(305 * var(--u));
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: calc(10 * var(--u));
-  }
   .st__mobile { display: none; }
+
+  .steps {
+    --p: 1;
+    list-style: none;
+    width: calc(1150 * var(--u));
+    margin: calc(64 * var(--u)) 0 0;
+    padding: 0 0 0 calc(55 * var(--u));
+  }
+  .step {
+    position: relative;
+    display: grid;
+    grid-template-columns: calc(150 * var(--u)) 1fr;
+    align-items: start;
+    padding: calc(16 * var(--u)) 0 calc(18 * var(--u));
+  }
+  .step__rule {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: max(2px, calc(3 * var(--u)));
+    background: var(--black);
+    transform-origin: left center;
+  }
+  .rv-rule { --t: clamp(0, calc((var(--p) - var(--a)) / (var(--b) - var(--a))), 1); transform: scaleX(var(--t)); }
+  .step__num {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: calc(84 * var(--u));
+    line-height: 0.8;
+    letter-spacing: var(--track-statement);
+    padding-top: calc(4 * var(--u));
+  }
+  .step__body { display: flex; flex-direction: column; gap: calc(8 * var(--u)); }
+  .step__label {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: max(11px, calc(16 * var(--u)));
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .step__text {
+    font-family: var(--font-pixel);
+    font-size: calc(34 * var(--u));
+    line-height: calc(32 * var(--u));
+    letter-spacing: -0.02em;
+  }
+
+  .foot-wrap { position: relative; z-index: 2; clip-path: inset(-200vh 0 0 0); }
+  .foot-surfer {
+    position: absolute;
+    translate: calc((1 - var(--rise, 1)) * 18cqw) calc((1 - var(--rise, 1)) * 75svh);
+    top: -30.8svh;
+    left: calc(71cqw - 0.46 * 93.6svh);
+    height: 93.6svh;
+    width: auto;
+    pointer-events: none;
+  }
 
   /* ---------------- PHONES (below 900px): reflow, no pinning ---------------- */
   @media (max-width: 899px) and (prefers-reduced-motion: no-preference) {
@@ -377,12 +394,13 @@ const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100
     .hero__pills :global(.pill--lg) { --h: 40px; }
     .hero__star-wrap { width: 64px; height: 64px; margin: 18px 0 0 auto; }
 
+    .fnav { display: none; }
     .finale__main { padding: 32px var(--gutter) 24px; }
-    .st { width: auto; height: auto; display: flex; flex-direction: column; }
+    .wp { width: auto; }
+    .st { height: auto; }
     .st__desk, .st__star-wrap { display: none; }
     .st__mobile {
       display: block;
-      order: -1;
       margin: 0 0 24px;
       font-family: var(--font-display);
       font-weight: 700;
@@ -392,11 +410,11 @@ const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100
       text-transform: uppercase;
     }
     .ibar { display: inline-block; width: var(--w); height: 0.7em; background: var(--black); vertical-align: -0.02em; }
-    .prism-stage { position: static; width: auto; height: auto; perspective: none; }
-    .prism { display: grid; gap: 12px; transform: none; }
-    .face { position: static; transform: none; font-size: 17px; line-height: 23px; padding: 12px 0; border-top: 2px solid var(--black); }
-    .st__pills { position: static; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 20px; }
-    .st__pills :global(.pill--lg) { --h: 40px; }
+    .steps { width: auto; padding: 0; margin: 8px 0 0; }
+    .step { grid-template-columns: 56px 1fr; padding: 14px 0 16px; }
+    .step__num { font-size: 40px; padding-top: 2px; }
+    .step__label { font-size: 12px; }
+    .step__text { font-size: 21px; line-height: 20px; }
     .foot-surfer { display: none; }
   }
 </style>
