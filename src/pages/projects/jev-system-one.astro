@@ -1,0 +1,99 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArticleHeader from '../../components/ArticleHeader.astro';
+import SectionRail from '../../components/SectionRail.astro';
+import StatStrip from '../../components/StatStrip.astro';
+import Abstract from '../../components/Abstract.astro';
+import TwoWays from '../../components/jev/TwoWays.astro';
+import RouterFlow from '../../components/jev/RouterFlow.astro';
+import JevVsHaiku from '../../components/jev/JevVsHaiku.astro';
+import SpendSplit from '../../components/jev/SpendSplit.astro';
+import MvpShowcase from '../../components/jev/MvpShowcase.astro';
+import { withBase } from '../../utils/url';
+import '../../styles/article.css';
+import type { ResearchMeta } from '../../types';
+
+export const meta: ResearchMeta = {
+  title: "Jev: Looking into System One models as a classifier",
+  dek: "This is a side project, written as a build log, on what happens when you take the decisions we usually hand to LLMs and give them to a model that was built only to make decisions.",
+  date: '2026-09-22',
+  slug: 'jev-system-one',
+  stats: [{"value": "10", "label": "task categories"}, {"value": "45.7×", "label": "cheaper than an LLM doing the same job"}, {"value": "0.38s", "label": "per decision"}, {"value": "60%", "label": "of the work for 3.3% of the spend"}],
+};
+const mvpHref = withBase('/mvp/pivotjev-router/');
+---
+
+<BaseLayout title={meta.title} description={meta.dek} nav="gold">
+  <ArticleHeader icon={meta.slug} theme="gold" title={meta.title} backHref={withBase('/projects')} backLabel="Projects" meta={['Pivot Log · Independent research']}>
+    <Fragment slot="dek">{meta.dek}</Fragment>
+    <StatStrip slot="after" stats={meta.stats} />
+  </ArticleHeader>
+
+  <article class="piece">
+    <SectionRail />
+
+    <Abstract>On the 15th of September TypeSafe released Jev, the first of what they call System One models, and I wanted to see what it was actually capable of. So this is a side project I picked up because the idea seemed pretty interesting. You give it some text and a set of questions with answers you've defined in advance, and it gives you back an answer and a probability for each one. To test it on something real, I built a task router for a made up wealthtech firm: every piece of internal work gets classified into one of ten categories and sent to the cheapest Claude model that can handle it, instead of everything going to the most expensive one by default. Jev classified all 50 of my test tasks correctly (after one fix, which I'll walk through), and did the same job as Claude Haiku for about 1/46th of the cost in well under half the time. Once routed, 60% of the tasks cost 3.3% of the total spend. The broader takeaway is that a lot of what we pay LLMs to do is really just making a decision, and there's now a much cheaper tool built for exactly that.</Abstract>
+
+    <section class="section" aria-labelledby="s1-heading">
+      <h2 id="s1-heading">1. Why I built this</h2>
+      <p>This wasn’t really a planned project, I had been working on a router of my own, a heavier version where you train your own classifier, label a dataset, rent GPUs and then hope it works. Then TypeSafe came out with Jev and had some pretty bold claim: roughly the same intelligence as frontier LLMs on decision type tasks, at a small fraction of the cost and the wait. So I wanted to put it through something close to a real use case and see where it held up.</p>
+      <p>In their launch, TypeSafe mentioned that models have been very good at chatting for a few years now, so where is all the automation? Their answer is that a model that replies in prose is an awkward thing to build software on top of, which does make intuitive sense. If you look at how most companies actually use LLMs inside their systems, a surprising amount of it has nothing to do with writing. Which team should this ticket go to, is this email a complaint, does this message contain personal information, which model should handle this task are all decisions. And we’ve been using LLMs to decided and do this for a while now, but with this there was a possibility that there could be an alternative.</p>
+      <p>I decided to try it out here because a router is a pretty perfect place to test this, because it is almost entirely decisions. It is also a place where the cost of the decision itself really matters. The whole point of a router is to stop paying frontier prices for simple work, so if the step deciding where a task goes is itself a call to an expensive model, you've spent the savings before you've routed anything.</p>
+    </section>
+    <section class="section" aria-labelledby="s2-heading">
+      <h2 id="s2-heading">2. What a System One model actually is</h2>
+      <p>The name comes from Daniel Kahneman's Thinking, Fast and Slow, which TypeSafe openly say they borrowed from. System 1 is the fast, intuitive judgment you make without really thinking about it, and System 2 is the slow, deliberate reasoning. LLMs, especially reasoning models, sit very much on the System 2 side.</p>
+      <p>In practice it's simple, and a bit strange the first time you use it. You give Jev a block of text (they call it state) and a list of questions. For each question you define the possible answers ahead of time: pick one option from a list, a yes or no, or a score on a scale you set. Jev returns one answer per question with a probability attached, and it cannot return anything outside the answers you defined. So there's no parsing, and it can't invent an answer that isn't in your list. It also can't write a reply, explain itself or produce code. That's the trade, it gives up text entirely.</p>
+      <TwoWays />
+      <p>Two things came out of this that established how I built everything else, the first one being cost. Because nothing is generated, you only pay for what you send in ($0.042 per million input tokens) and the output is free. The second, which I think matters more, is the probability. TypeSafe trained Jev specifically so that its probabilities are calibrated, so across lots of decisions, the ones it gives 90% should be right roughly 90% of the time. An LLM telling you it's "85% confident" gives you no such guarantee. If you want to build rules on top of a model's confidence, something like "if you're not sure, escalate", then that confidence has to actually mean something, otherwise the rule is just a random number.</p>
+      <p>What all of this points towards as an architecture is fairly clean. Jev makes the decision, and an LLM does the writing. Which makes Jev the perfect plug in to be used in system architecture.</p>
+    </section>
+    <section class="section" aria-labelledby="s3-heading">
+      <h2 id="s3-heading">3. Designing the router</h2>
+      <p>The setup I went with was a synthetic wealthtech firm (an ideal place I’d want to work in) with ten categories of internal work. Four went on the cheap tier, Claude Haiku: client correspondence, meeting notes, KYC document extraction and internal policy questions. Two on the mid-tier, Sonnet: market research summaries and client performance reports. Three on the expensive tier, Opus: investment memos, multi-step financial analysis and internal code. And one that I treated differently from everything else, compliance and suitability review – because it was necessary to ensure some stuff didn’t touch the frontier models.</p>
+      <p>A task comes in, Jev picks one of the ten categories and gives its confidence, and then some simple code routes the task to a specific model. If the confidence clears that category's threshold (0.7 to start with), it goes to that category's tier. If it doesn't, or if anything errors along the way, it goes to Opus. I chose to fail upwards on purpose, if the router isn't sure, the worst outcome should be paying a bit too much, not a weak answer from the cheapest model.</p>
+      <p>I want to talk about one aspect in the router which I specifically spent some time modelling, compliance. I’ve been talking about how it is important to model compliance and safety models into all aspects of your stack, and I don’t think a router model would be any different. So what I did was ensure that anything Jev classified as a compliance or suitability question goes to Opus no matter how confident it is, and that rule gets checked before the confidence is looked at. For anything with regulatory consequences, I didn't want the cost saving to depend on a probability at all.</p>
+      <RouterFlow />
+      <p>The design detail I found most interesting though is exploring where the intelligence of the router actually lives. With these system one models, and Jev specifically, there's no training on my side at all. For each category you write a short description (the criteria), and that text is what Jev reads when it decides. So from my side, ten short paragraphs of wording are basically the entire model, which is equivalent of prompting it. That's a big upside, you can change how it behaves instantly without going anywhere near a GPU, but it also meant that there is a risk that it just isn’t aligned like some chats with frontier models are.</p>
+    </section>
+    <section class="section" aria-labelledby="s4-heading">
+      <h2 id="s4-heading">4. Testing it</h2>
+      <p>To see how good the classification actually was I needed an answer key, so I wrote 50 tasks, five per category, each labelled with where it should land. The important decision here was that 30 of them were straightforward and 20 were deliberately hard, sitting right on the line between two categories. For example, a client emailing to move all her savings into crypto looks like correspondence, but is actually a suitability problem.</p>
+      <p>On the first run, Jev got 49 out of 50. But the one that it got wrong was pretty telling on what the model was capable off and how to be able to calibrate and use it.</p>
+      <p>The task was: "<strong>Write a script that goes through the account opening PDFs in the intake folder and pulls each applicant's PAN and date of birth into a spreadsheet."</strong> This should be internal code, the thing being asked for is a script. Jev put it in KYC extraction, at 0.73 confidence (which was also the only low confidence result). So to investigate this, I looked into my prompt and saw that my criteria was the reason there was a bit of drift. My KYC description said "pulling specific fields, such as name, account of a client's details, or risk profile, out onboarding paperwork into a structured format", and the task was almost exactly aligned to that. The one word that mattered, script, was sitting at the very start of the sentence, and because everything after that read like it fit into the KYC prompt, it was mislabelled.</p>
+      <p>What made it more interesting is that the same task came up again in two later runs, and it went to KYC extraction both times, at 0.72 and then 0.69. So it was a consistent confusion, which meant that my prompt was wrong.</p>
+      <p>The fix itself was a sentence on each side in my prompt, where I added a line to the internal code description saying it includes scripts that extract data, KYC fields included, when the thing being asked for is the code itself. And a line to KYC extraction saying it's done directly, and if a task asks for a script or pipeline to do it, it belongs under code. And I ran it again after making these changes, then it came back with correct classification with a confidence of 1.0 . I also ran it five more times to make sure it wasn't a one off and all six came back the same, then reran the full set and it was 50 out of 50, which again just showed how important the prompt is.</p>
+      <p>With Jev, there's no retraining loop, so you have to look at what it got wrong, find the overlapping language, and fix a sentence. But again, the flip side is that the classifier is good as the descriptions you write, and categories that sound alike will get confused which means being mindful, numerous trial and error in the prompt will make Jev much more aligned.</p>
+    </section>
+    <section class="section" aria-labelledby="s5-heading">
+      <h2 id="s5-heading">5. Jev against an LLM doing the same job</h2>
+      <p>Getting 50 out of 50 with Jev was nice, but on its own it doesn't prove Jev is the right tool for building a classifier model. The obvious alternative is to just ask a cheap LLM to do the sorting, so I tried exactly that. I ran the same 50 tasks with the same ten descriptions through Claude Haiku, and forced it to answer in a fixed format (one category from the list plus a confidence number), so to ensure that way both were doing an identical job.</p>
+      <p>Both got 50 out of 50, so on accuracy there was no difference, which made the rest a fair comparison.</p>
+      <p>The biggest and more important gap was the cost difference that I saw. Classifying all 50 tasks cost $0.0018 on Jev and $0.0818 on Haiku, so about 46 times more for exactly the same answers. In simple terms this difference stems from the difference that Haiku has to write out it’s answers and we pay for the fact that it has to write it out as well.</p>
+      <p>The next difference, and the way I arrived at this was interesting, like I knew intuitively that Jev was supposed to be much faster, but this wasn’t apparent immediately. My first measurements had Jev at about a second per call, level with Haiku, which didn't match anything that I had seen with Type Safe’s publication, so I decided to dig back into it. The mistake was that my code was opening a brand new connection to Jev for every task, so each call paid for the full connection setup before it even got to the question. On a small side test, calls on fresh connections sat around a second each, while calls on one reused connection dropped to about a third of a second. Once I fixed that, Jev came in at 0.38 seconds per decision against Haiku's 1.01, about 2.6 times faster.</p>
+      <p>What is worth noting here is that while 2.6 times faster is a lot less than the "two orders of magnitude" TypeSafe talk about, I compared it to the fastest Claude model rather than a frontier one, and part is that a good chunk of each call is just network round trip. While these differences are small on a task by task basis, they would compound very fats in a bunch of tasks.</p>
+      <JevVsHaiku />
+      <p>The confidence numbers were the last thing I looked at. Jev's confidence on its correct answers averaged 0.995 and never went below 0.94. Haiku's averaged 0.948 and ranged from 0.85 to 0.98. I want to be careful with this, because it doesn't prove Jev is better calibrated. Once the fix was in neither model got anything wrong, so there was no wrong answer to test the confidence against. The one real example is the script task, where the wrong answer came in between 0.69 and 0.73, well below everything Jev got right, which is the separation you'd want.</p>
+    </section>
+    <section class="section" aria-labelledby="s6-heading">
+      <h2 id="s6-heading">6. Routing real work, and what it cost</h2>
+      <p>The last step was to run it end to end: every task classified by Jev, routed, and executed for real by whichever Claude model it was sent to, with the cost of every call recorded.</p>
+      <p>20 tasks went to Haiku, 10 to Sonnet and 20 to Opus, and the whole run came to $2.48. The split of that spend is really the point of the whole project. The 30 tasks on the cheap and mid tiers, 60% of all the work, cost $0.08 combined, 3.3% of the total. The other 96.7% went to the 20 tasks that actually needed Opus, the memos, the analysis, the code and the compliance reviews. And the classification on top of all of that, Jev deciding where every task went, cost less than a fifth of a cent.</p>
+      <SpendSplit />
+      <p>What I haven't been able to do is measure the other side of that comparison, what the exact same 50 tasks would cost if every single one went to Opus, which is the default a router is supposed to replace. I built everything needed to run it, but sending every task through Opus again costs real money, and right now I don't have the budget to keep running experiments like this on my own. So for now it's an estimate, somewhere between roughly $3 and $6.50 for the full set, depending on how much Opus scales its effort down on the simple tasks.</p>
+      <p>There are a few other things I want to be clear about. All 50 tasks are synthetic, written by me, and so are the labels. Fifty tasks is also a small set. Enough to see the pattern and catch the one real confusion, not enough to say how it would hold up on a real firm's workload. And the script task showed that Jev isn't perfectly consistent either, the same input gave me 0.73 one day and 0.69 another, so any threshold you set needs to leave some room for that.</p>
+    </section>
+    <section class="section" aria-labelledby="s7-heading">
+      <h2 id="s7-heading">7. How I think I can use Jev</h2>
+      <p>When something gets dramatically cheaper like this, people start using it in places they never would have bothered before. At a fraction of a cent and a third of a second, a decision becomes cheap enough to put in front of every single task: every email, every ticket, every step inside an agent.</p>
+      <p>This is very different from the use cases of an LLM, as in these are two distinct categories. The router only works because Opus is still sitting there for the memos and the analysis, and Jev can't write a single sentence. What I do think is that the habit of sending every decision through an LLM, just because it's the tool we already have open, is going to look pretty wasteful pretty soon. The sooner we let a System One model decide, and only call the LLM when there's actual thinking or writing to be done, the better.</p>
+      <p>For this project there are a few clear next steps. I want to run the Opus baseline properly once the budget allows, so the savings are measured rather than estimated. I want to add a second check for tasks that are sensitive but get put in the wrong category, because the compliance rule only protects tasks that were correctly labelled as compliance in the first place. And the part I'm most interested in building is a way for someone to drop in their own firm's categories and test the router on their own work, which is what the site below is for.</p>
+      <p>On a personal level, this was about getting to grips with a new kind of model within a week of it coming out, and seeing both what it's good at and where it breaks. It sorted 50 tasks correctly for a fraction of a cent, and it showed me that with a classifier like this, how clearly you describe what you want decided matters more than the model underneath.</p>
+      <p class="credits">Built solo, as a side project. Jev (jev-1.13.0) by TypeSafe as the classifier  ·  Claude Haiku 4.5, Sonnet 5 and Opus 5 as the routed tiers  ·  Python, 80 offline tests, GitHub Actions CI  ·  open source under MIT at <a href="https://github.com/PrinceTut/pivotjev.router" target="_blank" rel="noopener noreferrer">github.com/PrinceTut/pivotjev.router</a>.</p>
+    </section>
+    <section class="section" aria-labelledby="s8-heading">
+      <h2 id="s8-heading">The MVP</h2>
+      <MvpShowcase href={mvpHref} title="PivotJev.router" repo="https://github.com/PrinceTut/pivotjev.router" address="princetut.github.io/pivot-log/mvp/pivotjev-router" />
+    </section>
+  </article>
+</BaseLayout>

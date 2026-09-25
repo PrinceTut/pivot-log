@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>pivotjev.router</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --night:#0A0F1C;
+  --night2:#0F1627;
+  --night3:#141D33;
+  --line:#1E2842;
+  --line2:#2A3656;
+  --ink:#E7EBF3;
+  --mute:#9099AE;
+  --faint:#6A7390;
+  --jev:#C9D7FF;
+  --cheap:#7FE3D0;
+  --mid:#F0B45C;
+  --exp:#E8577E;
+  --serif:'Instrument Serif',Georgia,'Times New Roman',serif;
+  --sans:'Geist',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){ --night:#0A0F1C; --ink:#E7EBF3; } }
+:root[data-theme="dark"]{ --night:#0A0F1C; --ink:#E7EBF3; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px);-webkit-text-size-adjust:100%}
+body{background:var(--night);color:var(--ink);font-family:var(--sans);font-weight:400;font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img,svg,canvas{max-width:100%;display:block}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--jev);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:40;padding-top:env(safe-area-inset-top,0px);background:rgba(10,15,28,.62);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(30,40,66,.7)}
+.nav-in{max-width:1180px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{font-family:var(--sans);font-weight:600;font-size:15px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand .mark{width:18px;height:18px;border-radius:50%;background:conic-gradient(from 200deg,var(--cheap),var(--jev),var(--exp),var(--mid),var(--cheap));box-shadow:0 0 14px rgba(201,215,255,.35)}
+.brand span{color:var(--mute);font-weight:400}
+.nav-links{display:flex;gap:26px;align-items:center}
+.nav-links a{font-size:14px;color:var(--mute);text-decoration:none;transition:color .2s}
+.nav-links a:hover{color:var(--ink)}
+.nav-links .gh{color:var(--ink);border:1px solid var(--line2);padding:8px 14px;border-radius:999px}
+.nav-links .gh:hover{border-color:var(--jev)}
+@media(max-width:760px){.nav-links a:not(.gh){display:none}}
+
+/* hero */
+.hero{position:relative;height:min(100svh,920px);min-height:660px;overflow:hidden;isolation:isolate}
+#gl{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.hero-fallback{position:absolute;inset:0;z-index:0;display:none;background:
+  radial-gradient(38% 42% at 58% 45%,rgba(201,215,255,.22),transparent 60%),
+  radial-gradient(22% 26% at 62% 40%,rgba(232,87,126,.18),transparent 70%),
+  radial-gradient(26% 28% at 54% 52%,rgba(127,227,208,.16),transparent 70%)}
+.hero::after{content:"";position:absolute;inset:auto 0 0 0;height:58%;z-index:1;pointer-events:none;background:linear-gradient(to bottom,rgba(10,15,28,0),rgba(10,15,28,.72) 55%,var(--night))}
+.hero-copy{position:absolute;z-index:2;left:0;right:0;bottom:0;padding-bottom:72px}
+.hero h1{font-family:var(--serif);font-weight:400;font-size:clamp(50px,7.6vw,112px);line-height:.94;letter-spacing:-.015em;max-width:11ch}
+.hero-sub{margin-top:24px;max-width:52ch;color:#C3CADA;font-size:clamp(16px,1.35vw,19px);line-height:1.55}
+.hero-cta{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap}
+.btn{font-family:var(--sans);font-size:15px;font-weight:500;padding:13px 22px;border-radius:999px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;border:1px solid transparent;cursor:pointer;transition:transform .15s,background .2s,border-color .2s;min-height:46px;background:none;color:var(--ink)}
+.btn-solid{background:var(--ink);color:var(--night)}
+.btn-solid:hover{background:#fff;transform:translateY(-1px)}
+.btn-line{border-color:var(--line2)}
+.btn-line:hover{border-color:var(--jev)}
+.lane-label{position:absolute;z-index:2;font-size:13px;color:var(--mute);white-space:nowrap;transform:translateY(-50%);pointer-events:none;display:flex;align-items:center;gap:9px}
+.lane-label b{font-weight:500;color:var(--ink)}
+.lane-label i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.hero-note{position:absolute;z-index:2;right:28px;bottom:26px;font-size:12.5px;color:var(--faint)}
+@media(max-width:760px){.lane-label{display:none}.hero-note{display:none}.hero-copy{padding-bottom:48px}}
+
+/* sections */
+.sec{padding:140px 0 20px}
+.sec-head{max-width:760px;margin-bottom:56px}
+.sec h2{font-family:var(--serif);font-weight:400;font-size:clamp(40px,5.2vw,70px);line-height:1;letter-spacing:-.01em}
+.lede{margin-top:22px;color:var(--mute);font-size:18px;max-width:58ch}
+.cap{font-size:13px;color:var(--faint);margin-top:16px}
+
+/* decision demo */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:860px){.duo{grid-template-columns:1fr}}
+.pane{background:var(--night2);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;min-height:420px}
+.pane-top{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line);gap:12px}
+.pane-top h3{font-family:var(--sans);font-size:15px;font-weight:500}
+.pane-top .kind{font-size:13px;color:var(--mute)}
+.pane-body{padding:20px;flex:1;display:flex;flex-direction:column;gap:16px}
+.msg{font-size:15px;color:#C3CADA;background:var(--night3);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.msg small{display:block;font-size:12px;color:var(--faint);margin-bottom:4px}
+.stream{font-size:15px;line-height:1.65;color:var(--ink);min-height:120px}
+.stream .cursor{display:inline-block;width:8px;height:1.1em;background:var(--mute);vertical-align:text-bottom;margin-left:2px;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.parsed{font-size:13.5px;color:var(--mute);border-top:1px dashed var(--line2);padding-top:12px;min-height:34px}
+.parsed b{color:var(--ink);font-weight:500}
+.meter{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);padding:14px 20px;font-size:13px;color:var(--mute)}
+.meter .num{font-size:22px;color:var(--ink)}
+.bars{display:flex;flex-direction:column;gap:7px}
+.bar-row{display:grid;grid-template-columns:150px 1fr 44px;gap:10px;align-items:center;font-size:13px;color:var(--mute)}
+.bar-row .track{height:10px;background:var(--night3);border-radius:6px;overflow:hidden}
+.bar-row .fill{height:100%;width:10%;background:var(--line2);border-radius:6px;transition:width .9s cubic-bezier(.2,.8,.2,1),background .4s}
+.bar-row.win{color:var(--ink)}
+.bar-row.win .fill{background:var(--jev)}
+.bar-row .v{text-align:right;font-family:var(--mono);font-size:12.5px}
+.demo-actions{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:14px;flex-wrap:wrap}
+
+/* inspector */
+.insp{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:40px;align-items:start}
+@media(max-width:940px){.insp{grid-template-columns:1fr}}
+.matrix{display:flex;flex-direction:column;gap:8px}
+.mrow{display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center}
+.mrow .lab{font-size:14px;color:var(--mute);text-align:right}
+.dots{display:flex;gap:10px}
+.dot{width:44px;height:44px;border-radius:50%;border:none;background:transparent;cursor:pointer;display:grid;place-items:center;position:relative}
+.dot i{width:18px;height:18px;border-radius:50%;display:block;transition:transform .2s}
+.dot:hover i{transform:scale(1.25)}
+.dot.reg::after{content:"";position:absolute;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--exp);opacity:.7}
+.dot[aria-pressed="true"]{background:rgba(201,215,255,.1)}
+.dot[aria-pressed="true"] i{transform:scale(1.35);box-shadow:0 0 0 3px var(--night),0 0 0 5px var(--ink)}
+.legend{display:flex;gap:22px;flex-wrap:wrap;margin-top:22px;padding-left:174px;font-size:13px;color:var(--mute)}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.legend .ring{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--exp);display:inline-block}
+@media(max-width:560px){.mrow{grid-template-columns:1fr}.mrow .lab{text-align:left}.legend{padding-left:0}.dot{width:40px;height:40px}}
+.detail{position:sticky;top:96px;background:var(--night2);border:1px solid var(--line);border-radius:20px;padding:28px}
+.detail .dcat{font-size:13px;color:var(--mute)}
+.detail blockquote{font-family:var(--serif);font-size:clamp(22px,2vw,27px);line-height:1.25;margin:10px 0 26px;color:var(--ink)}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:24px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.flow div{padding:12px 12px;font-size:12.5px;color:var(--faint);border-right:1px solid var(--line)}
+.flow div:last-child{border-right:none}
+.flow div b{display:block;font-size:14px;color:var(--ink);font-weight:500;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cm{margin-bottom:22px}
+.cm-top{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);margin-bottom:10px}
+.cm-top .num{color:var(--ink)}
+.cm-track{position:relative;height:12px;background:var(--night3);border-radius:8px}
+.cm-fill{position:absolute;left:0;top:0;bottom:0;border-radius:8px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.cm-th{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--ink);opacity:.7}
+.cm-scale{position:relative;display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:8px;height:16px}
+.cm-scale #d-thlab{position:absolute;top:0;transform:translateX(-50%);color:var(--mute);white-space:nowrap}
+.outcome{font-size:15.5px;color:#C3CADA;border-top:1px solid var(--line);padding-top:18px}
+.outcome b{color:var(--ink);font-weight:500}
+.models{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+.chip{font-size:13px;padding:7px 13px;border-radius:999px;border:1px solid var(--line2);color:var(--faint)}
+.chip.on{color:var(--night);font-weight:500;border-color:transparent}
+.rules{margin-top:40px;display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+@media(max-width:820px){.rules{grid-template-columns:1fr}}
+.rules div{border-top:1px solid var(--line2);padding-top:16px;font-size:15px;color:var(--mute)}
+.rules div b{display:block;color:var(--ink);font-weight:500;margin-bottom:4px}
+
+/* race */
+.race{background:var(--night2);border:1px solid var(--line);border-radius:22px;padding:30px}
+.lane{display:grid;grid-template-columns:190px 1fr 150px;gap:22px;align-items:center;padding:18px 0}
+.lane+.lane{border-top:1px solid var(--line)}
+@media(max-width:820px){.lane{grid-template-columns:1fr;gap:12px}}
+.lane .who b{display:block;font-size:17px;font-weight:500}
+.lane .who span{font-size:13px;color:var(--mute)}
+.cells{display:grid;grid-template-columns:repeat(25,1fr);gap:4px}
+.cells i{aspect-ratio:1;border-radius:3px;background:var(--night3);transition:background .15s,transform .15s}
+.cells i.done{transform:scale(1)}
+.lane-stat{text-align:right}
+@media(max-width:820px){.lane-stat{text-align:left}}
+.lane-stat .num{font-size:26px;display:block;line-height:1.1}
+.lane-stat span{font-size:12.5px;color:var(--mute)}
+.race-foot{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.cmp{width:100%;border-collapse:collapse;margin-top:34px}
+.cmp th,.cmp td{text-align:left;padding:16px 10px;border-bottom:1px solid var(--line);font-weight:400}
+.cmp th{font-size:13px;color:var(--mute)}
+.cmp td:first-child{color:var(--mute);font-size:15px}
+.cmp td.j{color:var(--ink)}
+.cmp td .num{font-size:20px}
+.cmp td small{display:block;font-size:12.5px;color:var(--faint);margin-top:2px}
+.tablewrap{overflow-x:auto}
+
+/* cost */
+.cost{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:56px;align-items:center}
+@media(max-width:940px){.cost{grid-template-columns:1fr;gap:40px}}
+.bigpair{font-family:var(--serif);line-height:.95;letter-spacing:-.02em}
+.bigpair .a{font-size:clamp(64px,9vw,132px);color:var(--ink);display:block}
+.bigpair .b{font-size:clamp(64px,9vw,132px);display:block;background:linear-gradient(90deg,var(--exp),#F08AA6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.bigpair small{display:block;font-family:var(--sans);font-size:15px;color:var(--mute);letter-spacing:0;margin:6px 0 22px}
+.stack{margin-bottom:34px}
+.stack-top{display:flex;justify-content:space-between;font-size:14px;color:var(--mute);margin-bottom:10px}
+.stack-bar{display:flex;height:54px;border-radius:12px;overflow:hidden;background:var(--night3);gap:2px}
+.stack-bar div{height:100%;transition:flex-basis 1.4s cubic-bezier(.2,.8,.2,1);display:flex;align-items:center;padding:0 12px;font-size:13px;font-weight:500;color:var(--night);white-space:nowrap;overflow:hidden;min-width:0}
+.scale{position:relative;margin-top:14px}
+.scale-row{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:center;margin-bottom:14px;font-size:14px;color:var(--mute)}
+@media(max-width:560px){.scale-row{grid-template-columns:1fr;gap:6px}}
+.scale-track{position:relative;height:30px}
+.scale-track .solid{position:absolute;left:0;top:6px;height:18px;border-radius:6px;background:var(--ink)}
+.scale-track .dash{position:absolute;top:6px;height:18px;border-radius:6px;border:1.5px dashed var(--mute);background:repeating-linear-gradient(135deg,rgba(144,153,174,.12) 0 6px,transparent 6px 12px)}
+.scale-track .tag{position:absolute;top:4px;font-family:var(--mono);font-size:12.5px;color:var(--ink);white-space:nowrap}
+.axis{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--faint);padding-left:164px}
+@media(max-width:560px){.axis{padding-left:0}}
+.facts{margin-top:30px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+@media(max-width:820px){.facts{grid-template-columns:1fr}}
+.facts div{border-top:1px solid var(--line2);padding-top:14px;font-size:14.5px;color:var(--mute)}
+.facts div .num{display:block;font-size:24px;color:var(--ink);margin-bottom:2px}
+
+/* hood */
+.hood{display:grid;grid-template-columns:repeat(3,1fr);gap:40px}
+@media(max-width:820px){.hood{grid-template-columns:1fr;gap:28px}}
+.hood h3{font-family:var(--serif);font-weight:400;font-size:30px;line-height:1.1;margin-bottom:12px}
+.hood p{color:var(--mute);font-size:16px}
+
+/* next */
+.next{margin-top:10px;border:1px dashed var(--line2);border-radius:24px;padding:56px 44px;display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:center;background:
+  radial-gradient(60% 120% at 100% 0%,rgba(201,215,255,.06),transparent 60%),var(--night2)}
+@media(max-width:860px){.next{grid-template-columns:1fr;padding:36px 26px}}
+.next h2{font-size:clamp(36px,4.4vw,58px)}
+.steps{display:flex;flex-direction:column;gap:14px}
+.steps div{display:grid;grid-template-columns:34px 1fr;gap:12px;font-size:15px;color:#C3CADA;align-items:start}
+.steps div span{font-family:var(--mono);font-size:12px;color:var(--faint);border:1px solid var(--line2);border-radius:50%;width:28px;height:28px;display:grid;place-items:center}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+
+footer{margin-top:140px;border-top:1px solid var(--line);padding:40px 0 56px}
+.foot{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;font-size:14px;color:var(--mute)}
+.foot a{color:var(--ink);text-decoration:none;margin-left:22px}
+.foot a:hover{text-decoration:underline}
+.foot a:first-child{margin-left:0}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="#top" aria-label="pivotjev.router, back to top"><i class="mark" aria-hidden="true"></i>pivotjev<span>.router</span></a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#idea">The idea</a>
+      <a href="#decide">How it decides</a>
+      <a href="#versus">Jev vs an LLM</a>
+      <a href="#cost">Cost</a>
+      <a class="gh" href="https://github.com/PrinceTut/pivotjev.router" target="_blank" rel="noopener">View the code</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero" aria-label="Introduction">
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div class="hero-fallback" id="fallback" aria-hidden="true"></div>
+  <div class="lane-label" id="lab-cheap"><i style="background:var(--cheap)"></i><b>Haiku</b>20 tasks</div>
+  <div class="lane-label" id="lab-mid"><i style="background:var(--mid)"></i><b>Sonnet</b>10 tasks</div>
+  <div class="lane-label" id="lab-exp"><i style="background:var(--exp)"></i><b>Opus</b>20 tasks</div>
+  <div class="hero-copy">
+    <div class="wrap">
+      <h1>Most AI work doesn't need a thinker.</h1>
+      <p class="hero-sub">pivotjev.router puts a fast decision model in front of every task. Jev reads it, picks one of ten categories in about a third of a second, and only the work that needs real reasoning goes to the expensive model.</p>
+      <div class="hero-cta">
+        <a class="btn btn-solid" href="#decide">See how it decides</a>
+        <a class="btn btn-line" href="#cost">See what it saved</a>
+      </div>
+    </div>
+  </div>
+  <p class="hero-note">50 real tasks from the evaluation run, sorted by Jev</p>
+</section>
+
+<section class="sec" id="idea" aria-labelledby="idea-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="idea-h">Decisions, dressed up as writing.</h2>
+      <p class="lede">Which team gets this ticket. Is this email a complaint. Which model should handle this task. Most of what companies ask LLMs inside their systems is a decision. The LLM writes a sentence, you pay for every word, and your code pulls one label back out of it. Jev skips the sentence.</p>
+    </div>
+    <div class="duo">
+      <article class="pane" aria-label="An LLM classifying the message">
+        <div class="pane-top"><h3>An LLM</h3><span class="kind">writes, then gets parsed</span></div>
+        <div class="pane-body">
+          <div class="msg"><small>Incoming task</small>Please confirm my meeting is at 3pm tomorrow.</div>
+          <div class="stream" id="stream" aria-live="polite"></div>
+          <div class="parsed" id="parsed"></div>
+        </div>
+        <div class="meter"><span>Output tokens billed</span><span class="num" id="tok">0</span></div>
+      </article>
+      <article class="pane" aria-label="Jev classifying the message">
+        <div class="pane-top"><h3>Jev</h3><span class="kind">answers with a distribution</span></div>
+        <div class="pane-body">
+          <div class="msg"><small>Incoming task</small>Please confirm my meeting is at 3pm tomorrow.</div>
+          <div class="bars" id="bars"></div>
+        </div>
+        <div class="meter"><span>Output tokens billed</span><span class="num" id="tok2">0</span></div>
+      </article>
+    </div>
+    <div class="demo-actions">
+      <p class="cap" style="margin:0">Jev's side is its real answer to this message. The LLM side is an illustration of how a written answer gets turned into a label.</p>
+      <button class="btn btn-line" id="runDemo" type="button">Run both again</button>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="decide" aria-labelledby="decide-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="decide-h">Every task, decided.</h2>
+      <p class="lede">Fifty internal tasks from a wealthtech firm, five in each of ten categories. Pick any one to see what Jev decided and where the router sent it.</p>
+    </div>
+    <div class="insp">
+      <div>
+        <div class="matrix" id="matrix" role="group" aria-label="The 50 evaluation tasks, grouped by category"></div>
+        <div class="legend">
+          <span><i style="background:var(--cheap)"></i>Haiku</span>
+          <span><i style="background:var(--mid)"></i>Sonnet</span>
+          <span><i style="background:var(--exp)"></i>Opus</span>
+          <span><b class="ring"></b>Compliance, always Opus</span>
+        </div>
+      </div>
+      <aside class="detail" aria-live="polite">
+        <div class="dcat" id="d-cat"></div>
+        <blockquote id="d-text"></blockquote>
+        <div class="flow">
+          <div>Task<b id="f-task"></b></div>
+          <div>Jev chose<b id="f-jev"></b></div>
+          <div>Rule<b id="f-rule"></b></div>
+          <div>Sent to<b id="f-model"></b></div>
+        </div>
+        <div class="cm">
+          <div class="cm-top"><span>Jev's confidence</span><span class="num" id="d-conf"></span></div>
+          <div class="cm-track"><div class="cm-fill" id="d-fill"></div><div class="cm-th" id="d-th"></div></div>
+          <div class="cm-scale"><span>0.50</span><span id="d-thlab"></span><span>1.00</span></div>
+        </div>
+        <p class="outcome" id="d-out"></p>
+        <div class="models" id="d-models"></div>
+      </aside>
+    </div>
+    <div class="rules">
+      <div><b>Confident, so it goes to its own tier</b>If Jev's confidence clears the category's threshold, the task goes to the model that category is assigned to.</div>
+      <div><b>Unsure, so it goes up, never down</b>Below the threshold, or if anything errors, the task goes to Opus. The worst case is paying a little too much.</div>
+      <div><b>Compliance never rides on a probability</b>Anything classified as compliance or suitability goes to Opus, checked before confidence is even looked at.</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="versus" aria-labelledby="versus-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="versus-h">Jev against an LLM, on the same job.</h2>
+      <p class="lede">The same 50 tasks and the same ten descriptions, classified by Jev and by Claude Haiku, the cheapest Claude model, forced to answer in the same fixed format. Both got all 50 right.</p>
+    </div>
+    <div class="race" id="race">
+      <div class="lane">
+        <div class="who"><b>Jev</b><span>System One model</span></div>
+        <div class="cells" id="cells-jev" aria-hidden="true"></div>
+        <div class="lane-stat"><span class="num" id="rj-cost">$0.0000</span><span id="rj-n">0 of 50 decided</span></div>
+      </div>
+      <div class="lane">
+        <div class="who"><b>Claude Haiku</b><span>LLM, structured output</span></div>
+        <div class="cells" id="cells-hk" aria-hidden="true"></div>
+        <div class="lane-stat"><span class="num" id="rh-cost">$0.0000</span><span id="rh-n">0 of 50 decided</span></div>
+      </div>
+      <div class="race-foot">
+        <p class="cap" style="margin:0">Replayed at 10 times speed from the measured average time and cost per decision.</p>
+        <button class="btn btn-line" id="runRace" type="button">Replay the race</button>
+      </div>
+    </div>
+    <div class="tablewrap">
+    <table class="cmp">
+      <thead><tr><th scope="col"></th><th scope="col">Jev</th><th scope="col">Claude Haiku</th></tr></thead>
+      <tbody>
+        <tr><td>Accuracy</td><td class="j"><span class="num">50 / 50</span></td><td><span class="num">50 / 50</span></td></tr>
+        <tr><td>Cost to classify all 50</td><td class="j"><span class="num">$0.0018</span><small>45.7 times cheaper</small></td><td><span class="num">$0.0818</span></td></tr>
+        <tr><td>Average time per decision</td><td class="j"><span class="num">0.38s</span><small>2.6 times faster</small></td><td><span class="num">1.01s</span></td></tr>
+        <tr><td>Output tokens billed</td><td class="j"><span class="num">0</span><small>output is free</small></td><td><span class="num">Every one</span></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="cost" aria-labelledby="cost-h">
+  <div class="wrap">
+    <div class="cost">
+      <div>
+        <h2 id="cost-h" class="sr">Where the money went</h2>
+        <p class="bigpair" aria-label="60 percent of the work cost 3.3 percent of the spend">
+          <span class="a">60%</span><small>of the work, on the cheap and mid tiers</small>
+          <span class="b">3.3%</span><small>of the spend</small>
+        </p>
+        <p class="lede" style="margin-top:0">All 50 tasks were executed for real on the model they were routed to. Opus still did the memos, the analysis, the code and the compliance reviews. Everything else stopped paying Opus prices.</p>
+      </div>
+      <div id="costViz">
+        <div class="stack">
+          <div class="stack-top"><span>Share of tasks</span><span class="num">50 tasks</span></div>
+          <div class="stack-bar" aria-label="Haiku 40 percent, Sonnet 20 percent, Opus 40 percent of tasks">
+            <div style="flex-basis:40%;background:var(--cheap)">Haiku 40%</div>
+            <div style="flex-basis:20%;background:var(--mid)">Sonnet 20%</div>
+            <div style="flex-basis:40%;background:var(--exp)">Opus 40%</div>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="stack-top"><span>Share of spend</span><span class="num">$2.48</span></div>
+          <div class="stack-bar" id="spendBar" aria-label="Haiku 0.6 percent, Sonnet 2.7 percent, Opus 96.7 percent of spend">
+            <div data-to="0.58" style="flex-basis:40%;background:var(--cheap)"></div>
+            <div data-to="2.73" style="flex-basis:20%;background:var(--mid)"></div>
+            <div data-to="96.69" style="flex-basis:40%;background:var(--exp)">Opus 96.7%</div>
+          </div>
+        </div>
+        <div class="scale">
+          <div class="scale-row"><span>Routed, measured</span><div class="scale-track"><div class="solid" style="width:35.5%"></div><span class="tag" style="left:calc(35.5% + 10px)">$2.48</span></div></div>
+          <div class="scale-row"><span>All to Opus, estimated</span><div class="scale-track"><div class="dash" style="left:42.1%;width:50%"></div><span class="tag" style="left:calc(42.1% + 10px);top:-18px;color:var(--mute)">$2.95 to $6.45</span></div></div>
+          <div class="axis"><span>$0</span><span>$3.50</span><span>$7</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="facts">
+      <div><span class="num">$0.0018</span>for Jev to route all 50 tasks, less than a fifth of a cent</div>
+      <div><span class="num">$0.08</span>for the 30 tasks on Haiku and Sonnet, combined</div>
+      <div><span class="num">Estimated</span>The all-Opus comparison hasn't been run yet, so it's shown as a range, not a result</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" aria-labelledby="hood-h">
+  <div class="wrap">
+    <div class="sec-head"><h2 id="hood-h">What's underneath.</h2></div>
+    <div class="hood">
+      <div><h3>The model is ten paragraphs.</h3><p>There's no training on this side. Each category has a short description, and that text is what Jev reads when it decides. Fix a confusing description and the behaviour changes on the next call.</p></div>
+      <div><h3>It fails upwards.</h3><p>Low confidence, an error or an unknown answer all send the task to Opus. The router can overspend on a task. It can't quietly hand a hard task to the cheapest model.</p></div>
+      <div><h3>Tested before it spent a cent.</h3><p>Every rule was built and checked against fake answers first. 80 offline tests run on every push, and the code is open under an MIT licence.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" aria-labelledby="next-h">
+  <div class="wrap">
+    <div class="next">
+      <div>
+        <h2 id="next-h">Try it on your own work.</h2>
+        <p class="lede">Next on the list: describe your firm's own task buckets, generate a test set in the same format, and see how the router handles work that looks like yours.</p>
+        <div class="hero-cta"><button class="btn btn-line" type="button" disabled>In progress</button><a class="btn btn-solid" href="https://github.com/PrinceTut/pivotjev.router" target="_blank" rel="noopener">Clone the router</a></div>
+      </div>
+      <div class="steps" aria-label="How it will work">
+        <div><span>1</span>Describe the rough buckets your work falls into</div>
+        <div><span>2</span>Get a prompt that turns them into 50 test tasks</div>
+        <div><span>3</span>Upload the file and watch it get routed</div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <p>Built solo as a side project, on TypeSafe's Jev. MIT licensed.</p>
+    <p><a href="https://github.com/PrinceTut/pivotjev.router" target="_blank" rel="noopener">GitHub</a><a href="https://typesafe.ai/" target="_blank" rel="noopener">TypeSafe</a></p>
+  </div>
+</footer>
+
+<script id="DATA" type="application/json">{"tasks": [{"id": "cc_01", "cat": "client_correspondence", "conf": 1.0, "tier": "cheap", "text": "Please draft a reply to Mrs. Kapoor confirming her quarterly review is booked for 14 October at 11am, and include the video call link from the calendar invite.", "diff": "clear"}, {"id": "cc_02", "cat": "client_correspondence", "conf": 1.0, "tier": "cheap", "text": "Client emailed: 'Where can I download last year's capital gains statement?' Write a short reply pointing him to the Documents tab in the client portal.", "diff": "clear"}, {"id": "cc_03", "cat": "client_correspondence", "conf": 1.0, "tier": "cheap", "text": "A client wants to change the mobile number registered on her account. Reply telling her which form to fill in and that the change takes two working days.", "diff": "clear"}, {"id": "cc_04", "cat": "client_correspondence", "conf": 1.0, "tier": "cheap", "text": "Client writes: 'Can you just confirm my SIP of 25,000 a month into the flexi-cap fund is still running? Nothing else needs to change.' Draft a quick confirmation reply.", "diff": "boundary"}, {"id": "cc_05", "cat": "client_correspondence", "conf": 1.0, "tier": "cheap", "text": "A client asked what our cut-off time is for same-day redemption requests. The cut-off is 1:30pm on business days. Write the reply to the client.", "diff": "boundary"}, {"id": "mn_01", "cat": "meeting_notes_extraction", "conf": 1.0, "tier": "cheap", "text": "Transcript from this morning's call with the Mehta family office below. Pull out the decisions made and the action items with owners.\n\nRM: So we agree to trim the mid-cap allocation by five percent?\nMr. Mehta: Yes, and move it into the short-duration debt fund.\nRM: I'll send the switch forms by Thursday.\nMrs. Mehta: Can someone also check whether the old insurance policy has lapsed?\nRM: Priya from ops will check and revert by next week.", "diff": "clear"}, {"id": "mn_02", "cat": "meeting_notes_extraction", "conf": 1.0, "tier": "cheap", "text": "Turn these notes from Monday's investment committee into three sections: decisions, open questions, and next steps.\n\n- approved moving gilt duration from 5 to 6.5 years\n- no decision on gold, revisit next month\n- Arjun to circulate updated model portfolio weights by Friday\n- question raised on whether to add an international fund of funds, no owner yet", "diff": "clear"}, {"id": "mn_03", "cat": "meeting_notes_extraction", "conf": 1.0, "tier": "cheap", "text": "Voice memo transcript after my client lunch: 'Met Sunil, he's happy overall, wants to talk about his daughter's education fund next quarter, asked for the tax harvesting summary again, and mentioned he may sell the Pune flat next year.' Please structure this into a summary and a list of to-dos.", "diff": "clear"}, {"id": "mn_04", "cat": "meeting_notes_extraction", "conf": 1.0, "tier": "cheap", "text": "My notes from the call with Mr. Rao are below. Turn them into a list of follow-ups for me. Don't write anything to him yet.\n\n- wants SWP set up from January\n- asked about moving his NRE balance\n- unhappy with portal login issues, raise with tech\n- send him the fee schedule again", "diff": "boundary"}, {"id": "mn_05", "cat": "meeting_notes_extraction", "conf": 1.0, "tier": "cheap", "text": "Extract the action items and owners from these compliance committee minutes.\n\n1. Two suitability exceptions flagged in Q2, Meera to close both files by 30 Sept.\n2. Marketing disclaimer template to be updated, owner Rohan.\n3. Annual training attendance at 82 percent, HR to chase the remaining staff.", "diff": "boundary"}, {"id": "ok_01", "cat": "onboarding_kyc_extraction", "conf": 1.0, "tier": "cheap", "text": "From the account opening form text below, pull out full name, PAN, date of birth, address and nominee into a table.\n\nApplicant: Anjali Deshpande. PAN: ABCDE1234X. DOB: 12/03/1984. Residential address: Flat 402, Lakeview Towers, Powai, Mumbai 400076. Nominee: Rahul Deshpande (spouse), 100%.", "diff": "clear"}, {"id": "ok_02", "cat": "onboarding_kyc_extraction", "conf": 1.0, "tier": "cheap", "text": "Here are a new client's answers to the onboarding questionnaire. Extract each answer into the matching field: occupation, annual income band, investment experience in years, and preferred communication channel.\n\nQ1 Occupation: Senior manager, pharma company. Q2 Income: 50 lakh to 1 crore. Q3 Years investing: about 8. Q4 Contact preference: WhatsApp, then email.", "diff": "clear"}, {"id": "ok_03", "cat": "onboarding_kyc_extraction", "conf": 1.0, "tier": "cheap", "text": "Extract the account holder name, IFSC code and account type from this cancelled cheque text so ops can set up the payment mandate.\n\nOCR text: HDFC BANK ... A/C HOLDER: VIKRAM S NAIR ... IFSC HDFC0000XXX ... SAVINGS ACCOUNT ... A/C NO XXXXXXXX4417", "diff": "clear"}, {"id": "ok_04", "cat": "onboarding_kyc_extraction", "conf": 1.0, "tier": "cheap", "text": "Pull the client's declared annual income, net worth band, investment horizon and stated risk appetite from this onboarding form so the file is complete.\n\nIncome: 35 lakh. Net worth: 2 to 5 crore. Horizon: 7+ years. Risk appetite: moderately aggressive.", "diff": "boundary"}, {"id": "ok_05", "cat": "onboarding_kyc_extraction", "conf": 0.99, "tier": "cheap", "text": "New client intake call transcript below. Fill in the onboarding fields: name, occupation, source of funds, number of dependents.\n\nRM: Could you tell me a bit about yourself?\nClient: I'm Farhan Qureshi, I run a logistics business. The money we're investing is from selling part of the company last year. I have two kids and my mother lives with us.", "diff": "boundary"}, {"id": "ip_01", "cat": "internal_policy_qa", "conf": 1.0, "tier": "cheap", "text": "How many days of annual leave can I carry forward into next year, and is there a deadline to use them?", "diff": "clear"}, {"id": "ip_02", "cat": "internal_policy_qa", "conf": 1.0, "tier": "cheap", "text": "What's the approval process for expensing a client dinner above 10,000 rupees? Who signs off?", "diff": "clear"}, {"id": "ip_03", "cat": "internal_policy_qa", "conf": 1.0, "tier": "cheap", "text": "Which folder on the shared drive are we supposed to save signed client agreements in?", "diff": "clear"}, {"id": "ip_04", "cat": "internal_policy_qa", "conf": 1.0, "tier": "cheap", "text": "What is our internal policy on personal trading by employees? Do I need pre-clearance before buying shares in a company our research team covers?", "diff": "boundary"}, {"id": "ip_05", "cat": "internal_policy_qa", "conf": 1.0, "tier": "cheap", "text": "How do I get access to the Power BI performance dashboard, and who approves the access request?", "diff": "boundary"}, {"id": "mr_01", "cat": "market_research_summarization", "conf": 0.99, "tier": "mid", "text": "Summarize this RBI policy statement excerpt into five bullets for the internal morning note.\n\nThe MPC voted 5-1 to keep the repo rate unchanged at 5.50 percent. CPI inflation projection for FY27 was revised down to 3.6 percent. GDP growth projection retained at 6.7 percent. The stance remains neutral. The Governor noted that food prices have eased but core inflation remains sticky, and that the committee will remain data dependent.", "diff": "clear"}, {"id": "mr_02", "cat": "market_research_summarization", "conf": 1.0, "tier": "mid", "text": "Condense this broker note into one paragraph for the internal research digest.\n\nWe remain positive on large private banks. Loan growth has stabilized at 12 to 13 percent, deposit costs have peaked, and asset quality is benign with slippages below 1.5 percent. Key risk is margin compression if rate cuts are faster than expected. Top picks are the two largest private lenders on valuation comfort.", "diff": "clear"}, {"id": "mr_03", "cat": "market_research_summarization", "conf": 1.0, "tier": "mid", "text": "Give me a three-line internal summary of this news item: Brent crude rose 6 percent this week after supply disruptions in the Red Sea, the highest weekly gain since March. Analysts expect prices to remain volatile, and oil marketing company stocks fell 3 to 4 percent on margin concerns.", "diff": "clear"}, {"id": "mr_04", "cat": "market_research_summarization", "conf": 1.0, "tier": "mid", "text": "Summarize the three analyst reports on the IT services sector pasted below into one page, and note where they disagree. We just need the summary, not a view from us.\n\nReport A: expects deal wins to recover in H2, neutral rating.\nReport B: sees pricing pressure from GenAI deflation, underweight.\nReport C: positive on mid-tier IT on margin tailwinds from the rupee, overweight.", "diff": "boundary"}, {"id": "mr_05", "cat": "market_research_summarization", "conf": 1.0, "tier": "mid", "text": "Read this Fed statement and summarize what it says about the likely rate path. No need to work out any portfolio impact.\n\nThe Committee decided to lower the target range by 25 basis points. Members see a gradual pace of further easing depending on labor market conditions. Inflation has moved closer to target but remains somewhat elevated.", "diff": "boundary"}, {"id": "pr_01", "cat": "performance_report_drafting", "conf": 1.0, "tier": "mid", "text": "Write the quarterly commentary section for the client report using these numbers: portfolio return 4.1 percent vs benchmark 3.6 percent for Q2, equity sleeve +6.2 percent, debt sleeve +1.9 percent, largest contributor was the banking allocation.", "diff": "clear"}, {"id": "pr_02", "cat": "performance_report_drafting", "conf": 1.0, "tier": "mid", "text": "Draft the annual review narrative for the Sharma family report. FY26 return 12.8 percent, benchmark 11.9 percent, since-inception CAGR 10.4 percent over five years. Portfolio was rebalanced twice during the year.", "diff": "clear"}, {"id": "pr_03", "cat": "performance_report_drafting", "conf": 1.0, "tier": "mid", "text": "The client's portfolio underperformed its benchmark by 1.1 percent this half year, mostly because of the underweight in IT stocks during the rally. Write the paragraph for the report explaining this in plain language.", "diff": "clear"}, {"id": "pr_04", "cat": "performance_report_drafting", "conf": 0.96, "tier": "mid", "text": "Write the performance paragraph that will go into the email to Mr. Iyer: portfolio up 3.2 percent quarter to date against a benchmark of 2.8 percent, driven mainly by the mid-cap allocation.", "diff": "boundary"}, {"id": "pr_05", "cat": "performance_report_drafting", "conf": 1.0, "tier": "mid", "text": "Portfolio returned 11.4 percent vs benchmark 13.1 percent for FY26. Attribution already done: stock selection -1.2 percent, allocation -0.5 percent. Write the explanation section of the client's annual report based on this.", "diff": "boundary"}, {"id": "cs_01", "cat": "compliance_suitability_review", "conf": 1.0, "tier": "expensive", "text": "The RM wants to recommend a Category III AIF to a client whose profile shows moderate risk tolerance and an 18 month investment horizon. Check whether this recommendation is suitable.", "diff": "clear"}, {"id": "cs_02", "cat": "compliance_suitability_review", "conf": 1.0, "tier": "expensive", "text": "Review this line from a draft marketing email before it goes out: 'Our flagship fund guarantees 12 percent annual returns with zero risk.' Can we send this?", "diff": "clear"}, {"id": "cs_03", "cat": "compliance_suitability_review", "conf": 1.0, "tier": "expensive", "text": "Client is 72, retired, and needs regular income. The proposal is to switch her entire debt fund holding into a sectoral thematic equity fund. Flag any concerns with this proposal against her profile.", "diff": "clear"}, {"id": "cs_04", "cat": "compliance_suitability_review", "conf": 0.94, "tier": "expensive", "text": "Client emailed asking us to move all her savings into crypto ETFs because her nephew recommended it. Her file shows a conservative risk profile. Draft a reply to her.", "diff": "boundary"}, {"id": "cs_05", "cat": "compliance_suitability_review", "conf": 0.96, "tier": "expensive", "text": "Before we send out this quarterly report, check that the returns shown are net of fees and that the benchmark disclosure meets regulatory requirements.", "diff": "boundary"}, {"id": "im_01", "cat": "investment_memo_drafting", "conf": 1.0, "tier": "expensive", "text": "Write an investment memo making the case for initiating a position in Indian infrastructure InvITs for our income-focused portfolios, drawing on yield data, the regulatory framework, and comparable listed REIT performance.", "diff": "clear"}, {"id": "im_02", "cat": "investment_memo_drafting", "conf": 1.0, "tier": "expensive", "text": "Draft a research thesis on whether HNI portfolios should hold a strategic 5 to 10 percent gold allocation, synthesizing historical drawdown data, central bank buying trends, and correlation with Indian equities.", "diff": "clear"}, {"id": "im_03", "cat": "investment_memo_drafting", "conf": 1.0, "tier": "expensive", "text": "Prepare the IC memo recommending an allocation to a private credit fund. Pull together the manager's DDQ, their track record across two prior vintages, and current market data on private credit yields in India.", "diff": "clear"}, {"id": "im_04", "cat": "investment_memo_drafting", "conf": 0.97, "tier": "expensive", "text": "Using the two pharma sector reports below and our house view, write a recommendation on whether we should overweight pharma for the next 12 months.\n\nReport 1: US generics pricing stabilizing, earnings upgrades likely.\nReport 2: domestic formulations growth slowing, valuations stretched.\nHouse view: defensives preferred given rate uncertainty.", "diff": "boundary"}, {"id": "im_05", "cat": "investment_memo_drafting", "conf": 1.0, "tier": "expensive", "text": "Build the investment case for adding a 10 percent allocation to US Treasuries for our NRI clients, including the argument on currency hedging and how it fits alongside their existing Indian debt holdings.", "diff": "boundary"}, {"id": "fa_01", "cat": "adhoc_financial_analysis", "conf": 1.0, "tier": "expensive", "text": "If the rupee depreciates 5 percent against the dollar over the next quarter, what is the approximate impact on a portfolio with 30 percent in unhedged US equity and 15 percent in Indian IT exporters? Walk through the reasoning.", "diff": "clear"}, {"id": "fa_02", "cat": "adhoc_financial_analysis", "conf": 1.0, "tier": "expensive", "text": "Estimate how a 50 basis point rate cut would change the market value of our model conservative portfolio. Debt is 60 percent of the portfolio with an average modified duration of 4.2 years.", "diff": "clear"}, {"id": "fa_03", "cat": "adhoc_financial_analysis", "conf": 1.0, "tier": "expensive", "text": "A client wants to withdraw 2 lakh a month from a 3 crore portfolio. Assuming 8 percent expected return and 6 percent inflation with withdrawals rising with inflation, roughly how many years does the money last?", "diff": "clear"}, {"id": "fa_04", "cat": "adhoc_financial_analysis", "conf": 1.0, "tier": "expensive", "text": "A client holds 35 percent of his portfolio in a single stock. Calculate the concentration risk and what a 30 percent drawdown in that stock would do to his total portfolio value and to his portfolio volatility.", "diff": "boundary"}, {"id": "fa_05", "cat": "adhoc_financial_analysis", "conf": 0.99, "tier": "expensive", "text": "Work out why the balanced portfolio lagged its benchmark by 1.7 percent last quarter, using these weights and returns.\n\nPortfolio: equity 55 percent (return 2.0), debt 40 percent (return 1.4), cash 5 percent (return 0.9).\nBenchmark: equity 50 percent (return 5.2), debt 50 percent (return 1.6).", "diff": "boundary"}, {"id": "tc_01", "cat": "internal_tooling_code", "conf": 1.0, "tier": "expensive", "text": "Write a Python script that reads the daily NAV CSV from the shared drive and flags any fund whose NAV moved more than 3 percent day over day.", "diff": "clear"}, {"id": "tc_02", "cat": "internal_tooling_code", "conf": 1.0, "tier": "expensive", "text": "When we total the output of this SQL query for firm-wide AUM on the dashboard, joint accounts get counted once per holder, so they are double-counted. Fix it so each account is only counted once in the firm total.\n\nSELECT c.client_id, SUM(h.market_value) AS aum\nFROM clients c\nJOIN account_holders ah ON ah.client_id = c.client_id\nJOIN holdings h ON h.account_id = ah.account_id\nGROUP BY c.client_id;", "diff": "clear"}, {"id": "tc_03", "cat": "internal_tooling_code", "conf": 1.0, "tier": "expensive", "text": "The nightly ETL job that loads transactions from the custodian file fails whenever a trade date field is blank. Update the pipeline so it skips those rows and logs them to an exceptions file instead of crashing.", "diff": "clear"}, {"id": "tc_04", "cat": "internal_tooling_code", "conf": 1.0, "tier": "expensive", "text": "Write a function that calculates XIRR for each client portfolio from the transactions table, so we can show it as a column on the client dashboard.", "diff": "boundary"}, {"id": "tc_05", "cat": "internal_tooling_code", "conf": 1.0, "tier": "expensive", "text": "Write a script that goes through the account opening PDFs in the intake folder and pulls each applicant's PAN and date of birth into a spreadsheet.", "diff": "boundary"}]}</script>
+<script>(function(){
+"use strict";
+var DATA = JSON.parse(document.getElementById("DATA").textContent);
+var TASKS = DATA.tasks;
+var REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var COL = {cheap:"#7FE3D0", mid:"#F0B45C", expensive:"#E8577E"};
+var MODEL = {cheap:"Haiku", mid:"Sonnet", expensive:"Opus"};
+var CAT = {
+  client_correspondence:"Client emails",
+  meeting_notes_extraction:"Meeting notes",
+  onboarding_kyc_extraction:"KYC extraction",
+  internal_policy_qa:"Policy questions",
+  market_research_summarization:"Research summaries",
+  performance_report_drafting:"Performance reports",
+  compliance_suitability_review:"Compliance review",
+  investment_memo_drafting:"Investment memos",
+  adhoc_financial_analysis:"Financial analysis",
+  internal_tooling_code:"Internal code"
+};
+var CAT_ORDER = Object.keys(CAT);
+var TIER_AVG = {cheap:0.014464/20, mid:0.067794/10, expensive:2.401695/20};
+
+function onceVisible(el, fn, threshold){
+  if(!("IntersectionObserver" in window)){ fn(); return; }
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ io.disconnect(); fn(); } });
+  },{threshold: threshold || 0.35});
+  io.observe(el);
+}
+
+/* =========================================================
+   HERO: WebGL decision object + 50 routed task particles
+   ========================================================= */
+(function hero(){
+  var canvas = document.getElementById("gl");
+  var hero = canvas.parentElement;
+  function fallback(){
+    document.getElementById("fallback").style.display="block";
+    Array.prototype.forEach.call(document.querySelectorAll(".lane-label"), function(l){ l.style.display="none"; });
+  }
+  if(typeof THREE === "undefined"){ fallback(); return; }
+  var renderer;
+  try{ renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:true}); }
+  catch(e){ fallback(); return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+  renderer.setClearColor(0x000000, 0);
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+  camera.position.set(0, 0.2, 10.5);
+  var world = new THREE.Group();
+  scene.add(world);
+
+  var NOISE = [
+  "vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}",
+  "vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}",
+  "vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}",
+  "vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}",
+  "float snoise(vec3 v){",
+  " const vec2 C=vec2(1.0/6.0,1.0/3.0); const vec4 D=vec4(0.0,0.5,1.0,2.0);",
+  " vec3 i=floor(v+dot(v,C.yyy)); vec3 x0=v-i+dot(i,C.xxx);",
+  " vec3 g=step(x0.yzx,x0.xyz); vec3 l=1.0-g; vec3 i1=min(g.xyz,l.zxy); vec3 i2=max(g.xyz,l.zxy);",
+  " vec3 x1=x0-i1+C.xxx; vec3 x2=x0-i2+C.yyy; vec3 x3=x0-D.yyy;",
+  " i=mod289(i);",
+  " vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));",
+  " float n_=0.142857142857; vec3 ns=n_*D.wyz-D.xzx;",
+  " vec4 j=p-49.0*floor(p*ns.z*ns.z); vec4 x_=floor(j*ns.z); vec4 y_=floor(j-7.0*x_);",
+  " vec4 x=x_*ns.x+ns.yyyy; vec4 y=y_*ns.x+ns.yyyy; vec4 h=1.0-abs(x)-abs(y);",
+  " vec4 b0=vec4(x.xy,y.xy); vec4 b1=vec4(x.zw,y.zw);",
+  " vec4 s0=floor(b0)*2.0+1.0; vec4 s1=floor(b1)*2.0+1.0; vec4 sh=-step(h,vec4(0.0));",
+  " vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy; vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;",
+  " vec3 p0=vec3(a0.xy,h.x); vec3 p1=vec3(a0.zw,h.y); vec3 p2=vec3(a1.xy,h.z); vec3 p3=vec3(a1.zw,h.w);",
+  " vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));",
+  " p0*=norm.x; p1*=norm.y; p2*=norm.z; p3*=norm.w;",
+  " vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0); m=m*m;",
+  " return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));",
+  "}"].join("\n");
+
+  // the decision object (Jev)
+  var orbUniforms = { uTime:{value:0}, uPulse:{value:0} };
+  var orbMat = new THREE.ShaderMaterial({
+    uniforms: orbUniforms,
+    vertexShader: NOISE + [
+      "uniform float uTime; uniform float uPulse;",
+      "varying vec3 vN; varying vec3 vV; varying float vD;",
+      "float disp(vec3 p){ return (snoise(p*0.75+vec3(uTime*0.18))*0.75+snoise(p*1.6-vec3(uTime*0.11))*0.25)*(0.17+uPulse*0.06); }",
+      "vec3 dpos(vec3 p){ vec3 n=normalize(p); return p+n*disp(p); }",
+      "void main(){",
+      " vec3 n=normalize(position);",
+      " vec3 t1=normalize(cross(n,vec3(0.0,1.0,0.01)));",
+      " vec3 t2=normalize(cross(n,t1));",
+      " vec3 p=dpos(position);",
+      " vec3 a=dpos(position+t1*0.02); vec3 b=dpos(position+t2*0.02);",
+      " vec3 nn=normalize(cross(a-p,b-p)); if(dot(nn,n)<0.0) nn=-nn;",
+      " vD=disp(position);",
+      " vec4 mv=modelViewMatrix*vec4(p,1.0);",
+      " vV=normalize(-mv.xyz); vN=normalize(normalMatrix*nn);",
+      " gl_Position=projectionMatrix*mv;",
+      "}"].join("\n"),
+    fragmentShader: [
+      "uniform float uTime; uniform float uPulse;",
+      "varying vec3 vN; varying vec3 vV; varying float vD;",
+      "void main(){",
+      " vec3 N=normalize(vN); vec3 V=normalize(vV);",
+      " float ndv=max(dot(N,V),0.0);",
+      " float f=pow(1.0-ndv,2.0);",
+      " vec3 film=0.5+0.5*cos(6.28318*(vec3(0.0,0.33,0.67)+ndv*1.3+vD*2.2+uTime*0.04));",
+      " film=mix(film,vec3(0.79,0.84,1.0),0.3);",
+      " vec3 L=normalize(vec3(0.5,0.8,0.6));",
+      " float spec=pow(max(dot(reflect(-L,N),V),0.0),30.0);",
+      " float spec2=pow(max(dot(reflect(-normalize(vec3(-0.7,-0.2,0.5)),N),V),0.0),22.0);",
+      " vec3 base=vec3(0.035,0.05,0.11)+vec3(0.05,0.07,0.16)*(1.0-ndv);",
+      " vec3 col=base+film*f*(0.95+uPulse*0.25)+vec3(1.0)*spec*0.55+vec3(0.5,0.9,0.85)*spec2*0.25;",
+      " gl_FragColor=vec4(col,1.0);",
+      "}"].join("\n")
+  });
+  var orb = new THREE.Mesh(new THREE.IcosahedronGeometry(1.35, 36), orbMat);
+  world.add(orb);
+
+  // faint ring halo
+  var ringGeo = new THREE.RingGeometry(1.95, 1.965, 160);
+  var ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({color:0xC9D7FF, transparent:true, opacity:0.18, side:THREE.DoubleSide}));
+  world.add(ring);
+
+  // task particles
+  var TRAIL = 18;
+  var laneY = {cheap:1.55, mid:0.0, expensive:-1.55};
+  var tierRGB = {cheap:new THREE.Color(COL.cheap), mid:new THREE.Color(COL.mid), expensive:new THREE.Color(COL.expensive)};
+  var inRGB = new THREE.Color("#C9D7FF");
+  var order = TASKS.map(function(_,i){ return i; });
+  for(var q=order.length-1;q>0;q--){ var r=Math.floor(Math.random()*(q+1)); var tq=order[q]; order[q]=order[r]; order[r]=tq; }
+  var particles = TASKS.map(function(t,i){
+    return {
+      tier:t.tier,
+      phase:(order[i]/TASKS.length) + Math.random()*0.012,
+      y0:(Math.random()-0.5)*4.6,
+      z0:(Math.random()-0.5)*2.4,
+      lj:(Math.random()-0.5)*0.34,
+      speed:0.052+Math.random()*0.012
+    };
+  });
+  var N = particles.length*TRAIL;
+  var pos = new Float32Array(N*3), col = new Float32Array(N*3), size = new Float32Array(N), alpha = new Float32Array(N);
+  var pGeo = new THREE.BufferGeometry();
+  pGeo.setAttribute("position", new THREE.BufferAttribute(pos,3));
+  pGeo.setAttribute("aColor", new THREE.BufferAttribute(col,3));
+  pGeo.setAttribute("aSize", new THREE.BufferAttribute(size,1));
+  pGeo.setAttribute("aAlpha", new THREE.BufferAttribute(alpha,1));
+  var pMat = new THREE.ShaderMaterial({
+    uniforms:{ uPR:{value:renderer.getPixelRatio()} },
+    transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+    vertexShader:[
+      "attribute vec3 aColor; attribute float aSize; attribute float aAlpha; uniform float uPR;",
+      "varying vec3 vC; varying float vA;",
+      "void main(){ vC=aColor; vA=aAlpha; vec4 mv=modelViewMatrix*vec4(position,1.0);",
+      " gl_PointSize=aSize*uPR*(95.0/-mv.z); gl_Position=projectionMatrix*mv; }"].join("\n"),
+    fragmentShader:[
+      "varying vec3 vC; varying float vA;",
+      "void main(){ vec2 c=gl_PointCoord-0.5; float d=length(c); if(d>0.5) discard;",
+      " float a=smoothstep(0.5,0.0,d); gl_FragColor=vec4(vC*(0.6+a),a*vA); }"].join("\n")
+  });
+  var points = new THREE.Points(pGeo, pMat);
+  world.add(points);
+
+  // ambient dust
+  var DN = 420, dpos = new Float32Array(DN*3), dseed = [];
+  for(var d=0; d<DN; d++){
+    dpos[d*3]=(Math.random()-0.5)*22; dpos[d*3+1]=(Math.random()-0.5)*11; dpos[d*3+2]=(Math.random()-0.5)*8-2;
+    dseed.push(Math.random()*6.28);
+  }
+  var dGeo = new THREE.BufferGeometry(); dGeo.setAttribute("position", new THREE.BufferAttribute(dpos,3));
+  var dust = new THREE.Points(dGeo, new THREE.PointsMaterial({color:0x7C88A8, size:0.022, transparent:true, opacity:0.55, depthWrite:false}));
+  scene.add(dust);
+
+  // lane guide lines on the right
+  ["cheap","mid","expensive"].forEach(function(k){
+    var g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(2.4, laneY[k], 0), new THREE.Vector3(8.5, laneY[k], 0)]);
+    world.add(new THREE.Line(g, new THREE.LineBasicMaterial({color:new THREE.Color(COL[k]), transparent:true, opacity:0.12})));
+  });
+
+  function ease(x){ return x<0.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2; }
+  var tmp = new THREE.Color();
+  var X_IN = -8.5, X_OUT = 8.5;
+  function place(p, u, out, k){
+    var x,y,z,c,s,a;
+    if(u < 0.46){
+      var q = u/0.46, e = ease(q);
+      x = X_IN + (-0.25 - X_IN)*q;
+      y = p.y0*(1-e) + Math.sin(q*6.28+p.phase*9)*0.12*(1-e);
+      z = p.z0*(1-e);
+      tmp.copy(inRGB); s = 1.0; a = 0.55 + 0.35*q;
+    } else if(u < 0.54){
+      var r = (u-0.46)/0.08;
+      x = -0.25 + 0.5*r; y = Math.sin(r*3.14+p.phase*20)*0.15; z = Math.cos(r*3.14+p.phase*20)*0.15;
+      tmp.copy(inRGB).lerp(tierRGB[p.tier], r); s = 1.25; a = 1.0;
+    } else {
+      var q2 = (u-0.54)/0.46, e2 = ease(Math.min(q2*1.6,1));
+      x = 0.25 + (X_OUT-0.25)*q2;
+      y = (laneY[p.tier]+p.lj)*e2;
+      z = 0;
+      tmp.copy(tierRGB[p.tier]); s = 1.1; a = 1.0 - Math.max(0,(q2-0.85)/0.15);
+    }
+    var fade = 1 - k/TRAIL;
+    out.x=x; out.y=y; out.z=z; out.r=tmp.r; out.g=tmp.g; out.b=tmp.b; out.s=s*(0.35+0.65*fade)*(k===0?1.35:1); out.a=a*fade*fade;
+  }
+  var o = {};
+  function updateParticles(t){
+    for(var i=0;i<particles.length;i++){
+      var p = particles[i];
+      for(var k=0;k<TRAIL;k++){
+        var u = (p.phase + t*p.speed - k*0.0038) % 1; if(u<0) u+=1;
+        place(p,u,o,k);
+        var n = i*TRAIL+k;
+        pos[n*3]=o.x; pos[n*3+1]=o.y; pos[n*3+2]=o.z;
+        col[n*3]=o.r; col[n*3+1]=o.g; col[n*3+2]=o.b;
+        size[n]=o.s; alpha[n]=o.a;
+      }
+    }
+    pGeo.attributes.position.needsUpdate=true; pGeo.attributes.aColor.needsUpdate=true;
+    pGeo.attributes.aSize.needsUpdate=true; pGeo.attributes.aAlpha.needsUpdate=true;
+  }
+
+  var labs = {cheap:document.getElementById("lab-cheap"), mid:document.getElementById("lab-mid"), expensive:document.getElementById("lab-exp")};
+  var v3 = new THREE.Vector3();
+  function placeLabels(){
+    var w = hero.clientWidth, h = hero.clientHeight;
+    ["cheap","mid","expensive"].forEach(function(k){
+      v3.set(4.9, laneY[k]+0.28, 0); world.localToWorld(v3); v3.project(camera);
+      var x = (v3.x*0.5+0.5)*w, y = (-v3.y*0.5+0.5)*h;
+      labs[k].style.left = Math.min(x, w-150) + "px"; labs[k].style.top = y + "px";
+    });
+  }
+
+  function resize(){
+    var w = hero.clientWidth, h = hero.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w/h; camera.updateProjectionMatrix();
+    var narrow = w < 760;
+    world.position.set(narrow ? 0 : 1.35, narrow ? 2.15 : 0.55, 0);
+    var sc = narrow ? 0.52 : (w < 1100 ? 0.85 : 1);
+    world.scale.setScalar(sc);
+    pMat.uniforms.uPR.value = renderer.getPixelRatio();
+  }
+  window.addEventListener("resize", function(){ resize(); placeLabels(); });
+  resize();
+
+  var mx=0, my=0, rx=0, ry=0;
+  window.addEventListener("pointermove", function(e){ mx=(e.clientX/window.innerWidth-0.5); my=(e.clientY/window.innerHeight-0.5); }, {passive:true});
+
+  var running = true, looping = false;
+  function start(){ if(looping || REDUCE) return; looping = true; requestAnimationFrame(loop); }
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(function(es){ running = es[0].isIntersecting; if(running) start(); },{threshold:0}).observe(hero);
+  }
+
+  var t0 = performance.now(), last = 0, intro = 0;
+  function frame(t){
+    orbUniforms.uTime.value = t;
+    intro = Math.min(1, t/2.2);
+    var pulse = 0;
+    for(var i=0;i<particles.length;i++){
+      var u = (particles[i].phase + t*particles[i].speed) % 1;
+      if(u>0.46 && u<0.54) pulse += 1;
+    }
+    orbUniforms.uPulse.value += ((Math.min(pulse,4)/4) - orbUniforms.uPulse.value)*0.08;
+    orb.rotation.y = t*0.12; orb.rotation.x = Math.sin(t*0.2)*0.2;
+    orb.scale.setScalar(0.6 + 0.4*ease(intro));
+    ring.rotation.z = t*0.05; ring.rotation.x = 1.15 + Math.sin(t*0.3)*0.08;
+    updateParticles(t);
+    rx += (my*0.14 - rx)*0.05; ry += (mx*0.22 - ry)*0.05;
+    world.rotation.x = rx; world.rotation.y = ry;
+    var dp = dGeo.attributes.position.array;
+    for(var d=0; d<DN; d++){ dp[d*3+1] += Math.sin(t*0.4+dseed[d])*0.0009; }
+    dGeo.attributes.position.needsUpdate = true;
+    renderer.render(scene, camera);
+    placeLabels();
+  }
+  function loop(now){
+    if(!running){ looping = false; return; }
+    frame((now - t0)/1000);
+    requestAnimationFrame(loop);
+  }
+  if(REDUCE){ frame(14); }
+  else start();
+})();
+
+/* =========================================================
+   IDEA: LLM writes vs Jev decides
+   ========================================================= */
+(function demo(){
+  var stream = document.getElementById("stream"), parsed = document.getElementById("parsed");
+  var tok = document.getElementById("tok"), tok2 = document.getElementById("tok2");
+  var barsEl = document.getElementById("bars");
+  // Jev's real response to this message: confidence 0.95, distribution below
+  var DIST = [
+    ["client_correspondence",0.96],["internal_policy_qa",0.04],["meeting_notes_extraction",0.0],
+    ["onboarding_kyc_extraction",0.0],["market_research_summarization",0.0],["performance_report_drafting",0.0],
+    ["compliance_suitability_review",0.0],["investment_memo_drafting",0.0],["adhoc_financial_analysis",0.0],["internal_tooling_code",0.0]
+  ];
+  var rows = DIST.map(function(d){
+    var r = document.createElement("div"); r.className = "bar-row";
+    r.innerHTML = '<span></span><div class="track"><div class="fill"></div></div><span class="v">0.10</span>';
+    r.children[0].textContent = CAT[d[0]];
+    barsEl.appendChild(r);
+    return {el:r, fill:r.querySelector(".fill"), v:r.querySelector(".v"), p:d[1]};
+  });
+  var TEXT = "This message comes from a client asking to confirm the time of an existing meeting. It is a routine scheduling question with nothing regulatory in it, so the category that fits best is client correspondence. I would put my confidence at around 85%.";
+  var words = TEXT.split(" ");
+  var timer = null;
+  function run(){
+    clearInterval(timer);
+    stream.innerHTML = ""; parsed.innerHTML = ""; tok.textContent = "0"; tok2.textContent = "0";
+    rows.forEach(function(r){ r.el.classList.remove("win"); r.fill.style.width = "10%"; r.v.textContent = "0.10"; });
+    if(REDUCE){
+      stream.textContent = TEXT; tok.textContent = String(Math.round(words.length*1.35));
+      parsed.innerHTML = 'Parsed label: <b>client_correspondence</b>, stated confidence 0.85';
+      settle(); return;
+    }
+    setTimeout(settle, 380);
+    var i = 0, span = document.createElement("span"), cur = document.createElement("i");
+    cur.className = "cursor"; stream.appendChild(span); stream.appendChild(cur);
+    timer = setInterval(function(){
+      if(i >= words.length){
+        clearInterval(timer); cur.remove();
+        parsed.innerHTML = 'Parsed label: <b>client_correspondence</b>, stated confidence 0.85';
+        return;
+      }
+      span.textContent += (i ? " " : "") + words[i]; i++;
+      tok.textContent = String(Math.round(i*1.35));
+    }, 70);
+  }
+  function settle(){
+    rows.forEach(function(r){
+      r.fill.style.width = Math.max(r.p*100, 1.5) + "%";
+      r.v.textContent = r.p.toFixed(2);
+      if(r.p > 0.5) r.el.classList.add("win");
+    });
+  }
+  document.getElementById("runDemo").addEventListener("click", run);
+  onceVisible(document.getElementById("idea"), run, 0.4);
+})();
+
+/* =========================================================
+   DECIDE: the 50-task inspector
+   ========================================================= */
+(function inspector(){
+  var matrix = document.getElementById("matrix");
+  var byCat = {};
+  TASKS.forEach(function(t){ (byCat[t.cat] = byCat[t.cat] || []).push(t); });
+  var buttons = [];
+  CAT_ORDER.forEach(function(cat){
+    var row = document.createElement("div"); row.className = "mrow";
+    var lab = document.createElement("span"); lab.className = "lab"; lab.textContent = CAT[cat];
+    var dots = document.createElement("div"); dots.className = "dots";
+    (byCat[cat]||[]).forEach(function(t, i){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "dot" + (cat === "compliance_suitability_review" ? " reg" : "");
+      b.setAttribute("aria-pressed", "false");
+      b.setAttribute("aria-label", CAT[cat] + ", task " + (i+1) + ", sent to " + MODEL[t.tier]);
+      var ii = document.createElement("i"); ii.style.background = COL[t.tier]; b.appendChild(ii);
+      b.addEventListener("click", function(){ select(t, b); });
+      dots.appendChild(b); buttons.push(b);
+    });
+    row.appendChild(lab); row.appendChild(dots); matrix.appendChild(row);
+  });
+
+  var el = function(id){ return document.getElementById(id); };
+  function select(t, btn){
+    buttons.forEach(function(b){ b.setAttribute("aria-pressed","false"); });
+    btn.setAttribute("aria-pressed","true");
+    var reg = t.cat === "compliance_suitability_review";
+    var th = t.cat === "internal_tooling_code" ? 0.85 : 0.70;
+    el("d-cat").textContent = CAT[t.cat] + (t.diff === "boundary" ? ", a deliberately hard case" : "");
+    el("d-text").textContent = "\u201C" + t.text + "\u201D";
+    el("f-task").textContent = t.diff === "boundary" ? "Hard case" : "Clear case";
+    el("f-jev").textContent = CAT[t.cat];
+    el("f-rule").textContent = reg ? "Compliance" : "Confident";
+    el("f-model").textContent = MODEL[t.tier];
+    el("d-conf").textContent = t.conf.toFixed(2);
+    var pct = function(v){ return ((v-0.5)/0.5*100) + "%"; };
+    el("d-fill").style.width = pct(t.conf);
+    el("d-fill").style.background = COL[t.tier];
+    el("d-th").style.left = pct(th);
+    el("d-thlab").textContent = "threshold " + th.toFixed(2);
+    el("d-thlab").style.left = pct(th);
+    var avg = TIER_AVG[t.tier];
+    var avgTxt = avg < 0.01 ? "$" + avg.toFixed(4) : "$" + avg.toFixed(2);
+    el("d-out").innerHTML = reg
+      ? "Classified as compliance, so it goes to <b>Opus</b> whatever the confidence. Opus tasks averaged <b>" + avgTxt + "</b> each."
+      : "Confidence " + t.conf.toFixed(2) + " clears the " + th.toFixed(2) + " threshold, so it goes to <b>" + MODEL[t.tier] + "</b>, where tasks averaged <b>" + avgTxt + "</b> each.";
+    var m = el("d-models"); m.innerHTML = "";
+    ["cheap","mid","expensive"].forEach(function(k){
+      var c = document.createElement("span"); c.className = "chip" + (k === t.tier ? " on" : "");
+      if(k === t.tier) c.style.background = COL[k];
+      c.textContent = MODEL[k]; m.appendChild(c);
+    });
+  }
+  var start = TASKS.filter(function(t){ return t.cat === "compliance_suitability_review"; })[3] || TASKS[0];
+  var startBtn = buttons[TASKS.indexOf(start)] || buttons[0];
+  // buttons were created in CAT_ORDER, find the matching one
+  var idx = 0, found = null;
+  CAT_ORDER.forEach(function(cat){ (byCat[cat]||[]).forEach(function(t){ if(t === start) found = buttons[idx]; idx++; }); });
+  select(start, found || startBtn);
+})();
+
+/* =========================================================
+   VERSUS: the race, from measured averages at 10x speed
+   ========================================================= */
+(function race(){
+  var cj = document.getElementById("cells-jev"), ch = document.getElementById("cells-hk");
+  function build(host){ var a=[]; for(var i=0;i<50;i++){ var c=document.createElement("i"); host.appendChild(c); a.push(c);} return a; }
+  var J = build(cj), H = build(ch);
+  var costJ = 0.001789/50, costH = 0.081793/50;
+  var stepJ = 380/10, stepH = 1006/10;
+  var raf = null;
+  function paint(cells, n, color){ for(var i=0;i<50;i++){ cells[i].style.background = i < n ? color : ""; } }
+  function set(n1, n2){
+    paint(J, n1, "var(--jev)"); paint(H, n2, "#8A93AA");
+    document.getElementById("rj-cost").textContent = "$" + (n1*costJ).toFixed(4);
+    document.getElementById("rh-cost").textContent = "$" + (n2*costH).toFixed(4);
+    document.getElementById("rj-n").textContent = n1 + " of 50 decided";
+    document.getElementById("rh-n").textContent = n2 + " of 50 decided";
+  }
+  function run(){
+    cancelAnimationFrame(raf);
+    if(REDUCE){ set(50,50); return; }
+    var t0 = performance.now();
+    (function tick(now){
+      var el = now - t0;
+      var n1 = Math.min(50, Math.floor(el/stepJ)), n2 = Math.min(50, Math.floor(el/stepH));
+      set(n1, n2);
+      if(n2 < 50) raf = requestAnimationFrame(tick);
+    })(t0);
+  }
+  set(0,0);
+  document.getElementById("runRace").addEventListener("click", run);
+  onceVisible(document.getElementById("race"), run, 0.45);
+})();
+
+/* =========================================================
+   COST: task share collapses into spend share
+   ========================================================= */
+(function cost(){
+  var bar = document.getElementById("spendBar");
+  function go(){
+    Array.prototype.forEach.call(bar.children, function(d){ d.style.flexBasis = d.getAttribute("data-to") + "%"; });
+  }
+  if(REDUCE){ go(); return; }
+  onceVisible(document.getElementById("costViz"), function(){ setTimeout(go, 250); }, 0.5);
+})();
+
+})();
+</script>
+</body>
+</html>

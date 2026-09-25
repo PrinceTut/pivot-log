@@ -1,0 +1,105 @@
+---
+// Same task, two ways: an LLM writes a sentence that gets parsed (paying for every output
+// token); Jev returns one typed answer with a probability per category (0 output tokens).
+const task = 'Please draft a reply to Mrs. Kapoor confirming her quarterly review is booked for 14 October at 11am, and include the video call link from the calendar invite.';
+const sentence = 'This appears to be a client correspondence task, and I would say I am fairly confident...';
+const cats: [string, number][] = [
+  ['Client correspondence', 0.99], ['Meeting notes', 0.0], ['KYC document extraction', 0.0], ['Internal policy questions', 0.01],
+  ['Market research summaries', 0.0], ['Client performance reports', 0.0], ['Investment memos', 0.0],
+  ['Multi-step financial analysis', 0.0], ['Internal code', 0.0], ['Compliance and suitability review', 0.0],
+];
+---
+
+<figure class="tw viz" data-sentence={sentence}>
+  <div class="tw__panels">
+    <div class="tw__panel">
+      <p class="tw__head"><span>An LLM</span><span class="tw__sub">writes a sentence, then gets parsed</span></p>
+      <p class="tw__task">{task}</p>
+      <p class="tw__stream" aria-live="off">{sentence}</p>
+      <p class="tw__parse"><span class="tw__k">Parsed label</span> <code>client_correspondence</code></p>
+      <p class="tw__bill">Output tokens billed <b class="tw__count">22</b></p>
+    </div>
+    <div class="tw__panel">
+      <p class="tw__head"><span>Jev</span><span class="tw__sub">one typed answer, with a probability for each category</span></p>
+      <p class="tw__task">{task}</p>
+      <ul class="tw__dist">
+        {cats.map(([name, p]) => (
+          <li class:list={{ 'is-top': p > 0.5 }}><span class="tw__name">{name}</span><span class="tw__track"><span class="tw__fill" style={`--p:${p}`}></span></span><span class="tw__p">{p.toFixed(2)}</span></li>
+        ))}
+      </ul>
+      <p class="tw__bill">Output tokens billed <b>0</b></p>
+    </div>
+  </div>
+  <button type="button" class="tw__replay">Run both again</button>
+  <figcaption>Both end with the same label; only one of them paid for a paragraph to get there. An illustration of the two approaches, not a recorded call.</figcaption>
+</figure>
+
+<script>
+  function setupTwoWays() {
+    document.querySelectorAll<HTMLElement>('.tw').forEach((fig) => {
+      if (fig.dataset.ready) return;
+      fig.dataset.ready = '1';
+      const stream = fig.querySelector<HTMLElement>('.tw__stream');
+      const count = fig.querySelector<HTMLElement>('.tw__count');
+      const words = (fig.dataset.sentence || '').split(' ');
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let timer = 0;
+      const finalTokens = Math.round(words.length * 1.3);
+      const run = () => {
+        if (!stream || !count) return;
+        window.clearInterval(timer);
+        fig.classList.remove('is-done');
+        fig.classList.add('is-running');
+        if (reduce) { stream.textContent = words.join(' '); count.textContent = String(finalTokens); fig.classList.add('is-done'); return; }
+        let i = 0;
+        stream.textContent = '';
+        count.textContent = '0';
+        timer = window.setInterval(() => {
+          i += 1;
+          stream.textContent = words.slice(0, i).join(' ');
+          count.textContent = String(Math.round(i * 1.3));
+          if (i >= words.length) { window.clearInterval(timer); fig.classList.add('is-done'); }
+        }, 110);
+      };
+      new IntersectionObserver((entries, obs) => {
+        if (entries.some((e) => e.isIntersecting)) { run(); obs.disconnect(); }
+      }, { threshold: 0.4 }).observe(fig);
+      fig.querySelector('.tw__replay')?.addEventListener('click', run);
+    });
+  }
+  document.addEventListener('astro:page-load', setupTwoWays);
+</script>
+
+<style>
+  .tw { margin: var(--space-8) 0; }
+  .tw__panels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .tw__panel { display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--black); color: #fff; min-height: 22rem; }
+  .tw__head { display: flex; flex-direction: column; gap: 2px; margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.125rem; color: var(--gold); }
+  .tw__sub { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: #9aa0a6; }
+  .tw__task { margin: 0; padding: 10px 12px; background: #1c1f23; font-size: 0.875rem; line-height: 1.45; }
+  .tw__stream { margin: 0; font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.55; min-height: 4.6em; }
+  .tw.is-running:not(.is-done) .tw__stream::after { content: '▍'; color: var(--gold); }
+  .tw__parse { margin: 0; font-size: 0.8125rem; opacity: 1; }
+  .tw.is-running:not(.is-done) .tw__parse { opacity: 0; }
+  .tw__k { font-family: var(--font-mono); font-size: 11px; color: #9aa0a6; }
+  .tw__parse code { background: var(--gold); color: var(--black); }
+  .tw__bill { margin: auto 0 0; padding-top: 10px; border-top: 1px solid #3a3f45; display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-mono); font-size: 12px; color: #c9ccd0; }
+  .tw__bill b { font-family: var(--font-display); font-size: 1.75rem; color: #fff; }
+  .tw__dist { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+  .tw__dist li { display: grid; grid-template-columns: 1fr 5.5rem 2.2rem; align-items: center; gap: 8px; font-size: 0.75rem; color: #9aa0a6; }
+  .tw__dist li.is-top { color: #fff; font-weight: 700; }
+  .tw__track { height: 6px; background: #2e3237; }
+  .tw__fill { display: block; height: 100%; width: calc(var(--p) * 100%); background: var(--gold); }
+  @media (prefers-reduced-motion: no-preference) {
+    .tw__fill { transition: width 0.8s ease 0.2s; }
+    .tw:not(.is-running) .tw__fill { width: 0; }
+  }
+  .tw__p { font-family: var(--font-mono); text-align: right; }
+  .tw__replay { margin-top: 12px; padding: 8px 14px; font-family: var(--font-mono); font-size: 12px; background: transparent; border: 2px solid var(--black); cursor: pointer; }
+  .tw__replay:hover { background: var(--gold); }
+  .tw figcaption { margin-top: var(--space-3); }
+  @media (max-width: 639px) {
+    .tw__panels { grid-template-columns: 1fr; }
+    .tw__panel { min-height: 0; }
+  }
+</style>

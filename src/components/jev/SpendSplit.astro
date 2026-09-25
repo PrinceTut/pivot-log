@@ -1,0 +1,71 @@
+---
+// Share of tasks vs share of spend for the routed run, with ribbons showing Haiku and Sonnet
+// collapsing to slivers. Below: the measured run against the (unmeasured) all-to-Opus estimate.
+const tasks = [{ t: 'Haiku', v: 40, n: 20 }, { t: 'Sonnet', v: 20, n: 10 }, { t: 'Opus', v: 40, n: 20 }];
+const spend = [{ t: 'Haiku', v: 0.6 }, { t: 'Sonnet', v: 2.7 }, { t: 'Opus', v: 96.7 }];
+const cum = (a: { v: number }[]) => a.reduce<number[]>((acc, x) => [...acc, (acc[acc.length - 1] ?? 0) + x.v], []);
+const ct = [0, ...cum(tasks)], cs = [0, ...cum(spend)];
+const SCALE = 7;
+---
+
+<figure class="ss viz">
+  <p class="ss__label">Share of tasks <span>50 tasks</span></p>
+  <div class="ss__bar">
+    {tasks.map((s) => <span class:list={['seg', `seg--${s.t.toLowerCase()}`]} style={`--w:${s.v}%`}><b>{s.t} {s.v}%</b></span>)}
+  </div>
+  <svg class="ss__ribbons" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+    {tasks.map((s, i) => (
+      <polygon class={`rib rib--${s.t.toLowerCase()}`} points={`${ct[i]},0 ${ct[i + 1]},0 ${cs[i + 1]},40 ${cs[i]},40`} />
+    ))}
+  </svg>
+  <div class="ss__bar">
+    {spend.map((s) => <span class:list={['seg', `seg--${s.t.toLowerCase()}`]} style={`--w:${s.v}%`}>{s.v > 10 && <b>{s.t} {s.v}%</b>}</span>)}
+  </div>
+  <p class="ss__label">Share of spend <span>$2.48 in total</span></p>
+  <p class="ss__small"><span class="sw sw--haiku"></span>Haiku {spend[0].v}% <span class="sw sw--sonnet"></span>Sonnet {spend[1].v}%</p>
+
+  <div class="ss__cost">
+    <p class="ss__label">Cost of the same 50 tasks</p>
+    <div class="ss__scale">
+      <div class="ss__row"><span class="ss__rowname">Routed, measured</span><span class="ss__track"><span class="ss__measured" style={`--w:${(2.48 / SCALE) * 100}%`}></span></span><span class="ss__val">$2.48</span></div>
+      <div class="ss__row"><span class="ss__rowname">Everything to Opus, estimate</span><span class="ss__track"><span class="ss__est" style={`--l:${(3 / SCALE) * 100}%; --w:${((6.5 - 3) / SCALE) * 100}%`}></span></span><span class="ss__val">$3 to $6.50</span></div>
+      <div class="ss__axis" aria-hidden="true">{[0, 1, 2, 3, 4, 5, 6, 7].map((d) => <span style={`--x:${(d / SCALE) * 100}%`}>${d}</span>)}</div>
+    </div>
+    <p class="ss__note">The all-to-Opus figure is an estimate, not a measured run.</p>
+  </div>
+</figure>
+
+<style>
+  .ss { margin: var(--space-8) 0; padding-top: var(--space-4); border-top: var(--rule); }
+  .ss__label { display: flex; justify-content: space-between; margin: 0 0 6px; font-family: var(--font-mono); font-weight: 700; font-size: 12px; }
+  .ss__label span { font-weight: 400; color: var(--ink-soft); }
+  .ss__bar { display: flex; height: 44px; gap: 2px; }
+  .seg { width: var(--w); min-width: 3px; display: flex; align-items: center; padding: 0 10px; overflow: hidden; white-space: nowrap; font-family: var(--font-display); font-size: 0.875rem; }
+  .seg--haiku { background: var(--slab); box-shadow: inset 0 0 0 1.5px var(--black); }
+  .seg--sonnet { background: var(--gold); }
+  .seg--opus { background: var(--black); color: #fff; }
+  .ss__ribbons { display: block; width: 100%; height: 64px; }
+  .rib { opacity: 0.28; }
+  .rib--haiku { fill: #8d9399; } .rib--sonnet { fill: var(--gold); opacity: 0.6; } .rib--opus { fill: var(--black); opacity: 0.12; }
+  .ss__bar + .ss__label { margin: 6px 0 0; }
+  .ss__small { margin: 8px 0 0; font-family: var(--font-mono); font-size: 12px; }
+  .sw { display: inline-block; width: 11px; height: 11px; margin: 0 6px -1px 14px; box-shadow: inset 0 0 0 1.5px var(--black); }
+  .sw:first-child { margin-left: 0; }
+  .sw--haiku { background: var(--slab); } .sw--sonnet { background: var(--gold); }
+  .ss__cost { margin-top: var(--space-8); }
+  .ss__scale { display: grid; gap: 10px; }
+  .ss__row { display: grid; grid-template-columns: 11rem 1fr 6rem; gap: 12px; align-items: center; font-size: 0.875rem; }
+  .ss__track { position: relative; height: 22px; }
+  .ss__measured { position: absolute; left: 0; top: 0; bottom: 0; width: var(--w); background: var(--black); }
+  .ss__est { position: absolute; left: var(--l); top: 0; bottom: 0; width: var(--w); border: 2px dashed var(--black); background: repeating-linear-gradient(135deg, transparent 0 6px, rgba(0,0,0,.08) 6px 12px); }
+  .ss__val { font-family: var(--font-mono); font-weight: 700; font-size: 13px; }
+  .ss__axis { position: relative; height: 16px; margin: 0 calc(6rem + 12px) 0 calc(11rem + 12px); border-top: 1px solid var(--black); }
+  .ss__axis span { position: absolute; left: var(--x); top: 3px; transform: translateX(-50%); font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); }
+  .ss__note { margin: var(--space-3) 0 0; font-style: italic; font-size: var(--size-caption); color: var(--ink-soft); }
+  @media (max-width: 639px) {
+    .ss__row { grid-template-columns: 1fr 5rem; }
+    .ss__rowname { grid-column: 1 / -1; }
+    .ss__axis { margin: 0 calc(5rem + 12px) 0 0; }
+    .seg b { font-size: 0.75rem; }
+  }
+</style>

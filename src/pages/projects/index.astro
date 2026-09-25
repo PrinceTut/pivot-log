@@ -14,10 +14,16 @@ const pieces = Object.entries(modules)
 
 // Longer descriptions shown under each dek, matched by slug.
 const descriptions: Record<string, string> = {
+  'jev-system-one':
+    'To test it on something real, I built a task router for a made up wealthtech firm: every piece of internal work gets classified into one of ten categories and sent to the cheapest Claude model that can handle it, instead of everything going to the most expensive one by default.',
   'rag-chunking-and-retrieval':
     'An independent evaluation harness comparing six chunking strategies and four retrieval strategies over twenty structurally complex legal contracts, with every result traced back to its exact mechanism rather than left as a leaderboard number.',
   'building-an-slm':
     "I built a full RAG-plus-fine-tuned-SLM pipeline for India-Switzerland cross-border tax questions. The basic idea was for the knowledge to be in a curated database chunked and retrieved and the fine-tuned model behaving according to my specific use case.",
+};
+
+const extras: Record<string, { href: string; label: string }> = {
+  'jev-system-one': { href: '/mvp/pivotjev-router/', label: 'Open the MVP' },
 };
 
 // Intro copy as approved in chat (restored; an earlier zip had overwritten it).
@@ -37,6 +43,7 @@ const intro = "These are exercises I've done to build and break down systems, to
         dek={piece.dek}
         description={descriptions[piece.slug]}
         stats={piece.stats}
+        extra={extras[piece.slug]}
       />
     ))}
   </section>

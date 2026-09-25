@@ -1,0 +1,59 @@
+---
+// The MVP, shown as a live, scaled-down preview of the hosted site inside a browser frame.
+// The preview is non-interactive; clicking anywhere on it opens the full MVP.
+import GlassPill from '../GlassPill.astro';
+interface Props { href: string; title: string; repo: string; address: string; }
+const { href, title, repo, address } = Astro.props;
+---
+
+<div class="mvp viz">
+  <a class="mvp__title" href={href} target="_blank" rel="noopener noreferrer">{title}</a>
+  <a class="mvp__frame" href={href} target="_blank" rel="noopener noreferrer" aria-label={`Open ${title} in a new tab`}>
+    <span class="mvp__chrome" aria-hidden="true"><i></i><i></i><i></i><span class="mvp__url">{address}</span></span>
+    <span class="mvp__viewport">
+      <iframe src={href} title={`${title} preview`} loading="lazy" tabindex="-1" aria-hidden="true" sandbox="allow-scripts" scrolling="no"></iframe>
+    </span>
+  </a>
+  <div class="mvp__actions">
+    <GlassPill href={href} label="Open the MVP" size="md" external />
+    <GlassPill href={repo} label="View the code" size="md" external />
+  </div>
+</div>
+
+<script>
+  function setupMvp() {
+    document.querySelectorAll<HTMLElement>('.mvp__viewport').forEach((vp) => {
+      if (vp.dataset.ready) return;
+      vp.dataset.ready = '1';
+      const fit = () => vp.style.setProperty('--s', String(vp.clientWidth / 1440));
+      new ResizeObserver(fit).observe(vp);
+      fit();
+    });
+  }
+  document.addEventListener('astro:page-load', setupMvp);
+</script>
+
+<style>
+  .mvp { margin: var(--space-6) 0 var(--space-4); padding: var(--space-6); background: var(--black); color: #fff; }
+  .mvp__title {
+    display: inline-block;
+    margin-bottom: var(--space-4);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(28px, 3.2vw, 44px);
+    letter-spacing: var(--track-statement);
+    color: var(--gold);
+    text-decoration: none;
+  }
+  .mvp__title:hover { text-decoration: underline; text-decoration-color: var(--gold); }
+  .mvp__frame { display: block; text-decoration: none; border: 1px solid #3a3f45; background: #0b0e13; }
+  .mvp__frame:hover { border-color: var(--gold); }
+  .mvp__frame:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+  .mvp__chrome { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid #3a3f45; background: #15181d; }
+  .mvp__chrome i { width: 9px; height: 9px; border-radius: 50%; background: #3a3f45; }
+  .mvp__url { margin-left: 10px; font-family: var(--font-mono); font-size: 11px; color: #9aa0a6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mvp__viewport { --s: 0.5; position: relative; display: block; height: calc(900px * var(--s)); overflow: hidden; }
+  .mvp__viewport iframe { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; border: 0; transform: scale(var(--s)); transform-origin: 0 0; pointer-events: none; background: #0b0e13; }
+  .mvp__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: var(--space-4); }
+  @media (max-width: 639px) { .mvp { padding: var(--space-4); } }
+</style>

@@ -13,8 +13,9 @@ interface Props {
   description?: string;
   stats?: ResearchStat[];
   linkLabel?: string;
+  extra?: { href: string; label: string }; // optional second link, e.g. a live MVP
 }
-const { href, slug, index, title, dek, description, stats, linkLabel = 'Read the paper' } = Astro.props;
+const { href, slug, index, title, dek, description, stats, linkLabel = 'Read the paper', extra } = Astro.props;
 const link = withBase(href);
 ---
 
@@ -30,7 +31,10 @@ const link = withBase(href);
         {stats.map((s) => (<div><dt>{s.value}</dt><dd>{s.label}</dd></div>))}
       </dl>
     )}
-    <GlassPill href={link} label={linkLabel} size="md" />
+    <div class="entry__links">
+      <GlassPill href={link} label={linkLabel} size="md" />
+      {extra && <GlassPill href={withBase(extra.href)} label={extra.label} size="md" external />}
+    </div>
   </div>
 </article>
 
@@ -65,6 +69,7 @@ const link = withBase(href);
   .entry__dek { font-size: 1.1875rem; line-height: 1.5; margin: 0 0 12px; max-width: 46rem; }
   .entry__desc { font-size: 1rem; line-height: 1.6; color: var(--ink-soft); margin: 0 0 24px; max-width: 46rem; }
 
+  .entry__links { display: flex; flex-wrap: wrap; gap: 10px; }
   .entry__stats { display: flex; flex-wrap: wrap; gap: 20px 48px; margin: 0 0 28px; }
   .entry__stats dt { font-family: var(--font-display); font-weight: 700; font-size: 44px; line-height: 1; letter-spacing: var(--track-statement); }
   .entry__stats dd { margin: 4px 0 0; font-family: var(--font-mono); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }

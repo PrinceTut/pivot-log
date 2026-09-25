@@ -1,0 +1,92 @@
+---
+// Jev vs Claude Haiku on the same 50 tasks and descriptions (figures from the build log).
+const panels = [
+  { name: 'Jev', acc: 50, cost: 0.0018, lat: 0.38 },
+  { name: 'Claude Haiku', acc: 50, cost: 0.0818, lat: 1.01 },
+];
+const maxCost = 0.0818, maxLat = 1.01;
+const fresh = [1.0, 1.0, 1.0, 1.0, 1.0], reused = [0.33, 0.33, 0.33, 0.33, 0.33];
+---
+
+<figure class="vs viz">
+  <div class="vs__panels">
+    {panels.map((p) => (
+      <div class="vs__panel">
+        <p class="vs__name">{p.name}</p>
+        <p class="vs__same">same 50 tasks, same descriptions</p>
+        <div class="vs__row">
+          <span class="vs__label">Accuracy</span>
+          <span class="vs__num"><span data-to={p.acc} data-dec="0">{p.acc}</span>/50</span>
+        </div>
+        <div class="vs__row">
+          <span class="vs__label">Total cost</span>
+          <span class="vs__num">$<span data-to={p.cost} data-dec="4">{p.cost.toFixed(4)}</span></span>
+          <span class="vs__bar"><span style={`--w:${(p.cost / maxCost) * 100}%`}></span></span>
+        </div>
+        <div class="vs__row">
+          <span class="vs__label">Average latency</span>
+          <span class="vs__num"><span data-to={p.lat} data-dec="2">{p.lat.toFixed(2)}</span>s</span>
+          <span class="vs__bar"><span style={`--w:${(p.lat / maxLat) * 100}%`}></span></span>
+        </div>
+      </div>
+    ))}
+  </div>
+  <div class="vs__inset">
+    <p class="vs__insettitle">The connection test, approximate</p>
+    <div class="vs__calls">
+      <span class="vs__callslabel">Fresh connection each call, about a second</span>
+      <span class="vs__callbars">{fresh.map((v) => <span style={`--h:${v * 100}%`}></span>)}</span>
+      <span class="vs__callslabel">One reused connection, about a third of a second</span>
+      <span class="vs__callbars">{reused.map((v) => <span style={`--h:${v * 100}%`}></span>)}</span>
+    </div>
+  </div>
+</figure>
+
+<script>
+  function setupVs() {
+    document.querySelectorAll<HTMLElement>('.vs').forEach((fig) => {
+      if (fig.dataset.ready) return;
+      fig.dataset.ready = '1';
+      const nums = Array.from(fig.querySelectorAll<HTMLElement>('[data-to]'));
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { fig.classList.add('is-in'); return; }
+      nums.forEach((n) => { n.textContent = (0).toFixed(Number(n.dataset.dec)); });
+      new IntersectionObserver((entries, obs) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        obs.disconnect();
+        fig.classList.add('is-in');
+        const t0 = performance.now(), dur = 1100;
+        const step = (t: number) => {
+          const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+          nums.forEach((n) => { n.textContent = (Number(n.dataset.to) * e).toFixed(Number(n.dataset.dec)); });
+          if (k < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }, { threshold: 0.35 }).observe(fig);
+    });
+  }
+  document.addEventListener('astro:page-load', setupVs);
+</script>
+
+<style>
+  .vs { margin: var(--space-8) 0; }
+  .vs__panels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .vs__panel { padding: 18px; background: var(--black); color: #fff; display: grid; gap: 14px; align-content: start; }
+  .vs__name { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.375rem; color: var(--gold); }
+  .vs__same { margin: -10px 0 0; font-family: var(--font-mono); font-size: 11px; color: #9aa0a6; }
+  .vs__row { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: baseline; padding-top: 10px; border-top: 1px solid #3a3f45; }
+  .vs__label { font-size: 0.875rem; color: #c9ccd0; }
+  .vs__num { font-family: var(--font-display); font-weight: 700; font-size: 1.75rem; letter-spacing: var(--track-statement); text-align: right; }
+  .vs__bar { grid-column: 1 / -1; height: 8px; background: #2e3237; }
+  .vs__bar > span { display: block; height: 100%; width: var(--w); min-width: 2px; background: var(--gold); }
+  @media (prefers-reduced-motion: no-preference) {
+    .vs__bar > span { transition: width 1.1s cubic-bezier(.2,.7,.2,1); }
+    .vs:not(.is-in) .vs__bar > span { width: 0; }
+  }
+  .vs__inset { margin-top: 12px; padding: 14px 18px; background: var(--slab); }
+  .vs__insettitle { margin: 0 0 10px; font-family: var(--font-mono); font-weight: 700; font-size: 12px; }
+  .vs__calls { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; align-items: end; }
+  .vs__callslabel { font-size: 0.8125rem; grid-row: 2; }
+  .vs__callbars { grid-row: 1; display: flex; align-items: flex-end; gap: 6px; height: 56px; }
+  .vs__callbars > span { width: 18px; height: var(--h); background: var(--black); }
+  @media (max-width: 639px) { .vs__panels { grid-template-columns: 1fr; } }
+</style>

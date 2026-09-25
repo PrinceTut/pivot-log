@@ -9,6 +9,8 @@
 //     encryption the note says upholds "net banking and UPI".
 //   ultron: agents wired to one central message board; the founding agent
 //     (PHASEONE10841, who established the board) filled.
+//   jev-system-one: ten category bars with one answer filled: Jev returns one typed answer
+//     with a probability across the categories you defined.
 //   market-manipulation: a row of stocks as outlined bars; the one name the model keeps
 //     picking is filled and far taller, money concentrating in a single pocket.
 interface Props { slug: string; }
@@ -23,7 +25,8 @@ const agents = slug === 'ultron'
   : [];
 const isHack = slug === 'end2end-hackerman';
 const bars = slug === 'market-manipulation' ? [30, 44, 36, 88, 40, 26].map((h, i) => ({ x: 8 + i * 14.5, h, on: i === 3 })) : [];
-const known = grid.length > 0 || layers.length > 0 || agents.length > 0 || isHack || bars.length > 0;
+const dist = slug === 'jev-system-one' ? Array.from({ length: 10 }, (_, i) => ({ x: 6 + i * 9, on: i === 3 })) : [];
+const known = grid.length > 0 || layers.length > 0 || agents.length > 0 || isHack || bars.length > 0 || dist.length > 0;
 ---
 
 {known && (
@@ -38,6 +41,12 @@ const known = grid.length > 0 || layers.length > 0 || agents.length > 0 || isHac
           <rect x="37" y="38" width="26" height="17" class="cell on" />
           <rect x="46" y="64" width="8" height="10" class="cell" />
           {[0,1,2,3,4,5].map((i) => <rect x={9 + i * 14} y="80" width="12" height="11" class="cell" />)}
+        </g>
+      )}
+      {dist.length > 0 && (
+        <g>
+          {dist.map((d) => <rect x={d.x} y={d.on ? 10 : 84} width="6" height={d.on ? 82 : 8} class:list={['cell', { on: d.on }]} />)}
+          <line x1="3" y1="92" x2="97" y2="92" class="line" />
         </g>
       )}
       {bars.length > 0 && (

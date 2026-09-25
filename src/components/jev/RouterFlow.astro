@@ -1,0 +1,67 @@
+---
+// The router pipeline. Opus is the top lane so "fail upwards" is literal:
+// compliance is checked first and hard-wired to Opus; low confidence or any error goes up to Opus.
+---
+
+<figure class="rf viz">
+  <div class="rf__scroll">
+    <svg class="rf__svg" viewBox="0 0 980 420" role="img" aria-label="Router pipeline. A task goes into Jev, which returns a category and a confidence. Compliance or suitability tasks go straight to Opus without a confidence check. Otherwise, if confidence clears 0.7 the task goes to its category's tier, Haiku, Sonnet or Opus; if it does not, or anything errors, it goes up to Opus.">
+      <defs>
+        <marker id="rf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" /></marker>
+      </defs>
+      <!-- lanes -->
+      <g class="rf__lane rf__lane--opus"><rect x="790" y="56" width="170" height="64" /><text x="875" y="95">Opus</text></g>
+      <g class="rf__lane rf__lane--sonnet"><rect x="790" y="204" width="170" height="64" /><text x="875" y="243">Sonnet</text></g>
+      <g class="rf__lane rf__lane--haiku"><rect x="790" y="336" width="170" height="64" /><text x="875" y="375">Haiku</text></g>
+      <!-- nodes -->
+      <g class="rf__node"><rect x="16" y="208" width="104" height="56" /><text x="68" y="242">Task</text></g>
+      <g class="rf__node rf__node--jev"><rect x="160" y="196" width="150" height="80" /><text x="235" y="231">Jev</text><text x="235" y="256" class="rf__small">category + confidence</text></g>
+      <g class="rf__node"><polygon points="410,236 460,186 510,236 460,286" /><text x="460" y="232" class="rf__small">compliance</text><text x="460" y="250" class="rf__small">first</text></g>
+      <g class="rf__node"><polygon points="590,236 650,176 710,236 650,296" /><text x="650" y="232" class="rf__small">confidence</text><text x="650" y="250" class="rf__small">clears 0.7?</text></g>
+      <!-- main flow -->
+      <path class="rf__edge" d="M120 236 H158" marker-end="url(#rf-arrow)" />
+      <path class="rf__edge" d="M310 236 H408" marker-end="url(#rf-arrow)" />
+      <path class="rf__edge" d="M510 236 H588" marker-end="url(#rf-arrow)" />
+      <text x="549" y="226" class="rf__lbl">no</text>
+      <!-- confident: category's tier -->
+      <path class="rf__edge" d="M710 236 H788" marker-end="url(#rf-arrow)" />
+      <path class="rf__edge" d="M700 246 C 740 300, 750 368, 788 368" marker-end="url(#rf-arrow)" />
+      <path class="rf__edge" d="M700 226 C 730 170, 750 100, 788 96" marker-end="url(#rf-arrow)" />
+      <text x="724" y="318" class="rf__lbl">yes: the category's tier</text>
+      <!-- low confidence or error: always up -->
+      <path class="rf__edge rf__edge--up" d="M650 176 C 650 120, 700 88, 788 82" marker-end="url(#rf-arrow)" />
+      <text x="636" y="150" text-anchor="end" class="rf__lbl rf__lbl--strong">no, or any error:</text>
+      <text x="636" y="168" text-anchor="end" class="rf__lbl rf__lbl--strong">fails upwards</text>
+      <!-- compliance: hard-wired, skips the confidence check -->
+      <path class="rf__edge rf__edge--hard" d="M460 186 V 48 H 860 V 54" marker-end="url(#rf-arrow)" />
+      <text x="478" y="20" class="rf__lbl rf__lbl--strong">compliance or suitability: always Opus,</text>
+      <text x="478" y="38" class="rf__lbl rf__lbl--strong">confidence never checked</text>
+      <text x="436" y="178" class="rf__lbl">yes</text>
+    </svg>
+  </div>
+  <p class="rf__legend"><span class="sw sw--haiku"></span>Haiku, cheap tier <span class="sw sw--sonnet"></span>Sonnet, mid tier <span class="sw sw--opus"></span>Opus, expensive tier</p>
+</figure>
+
+<style>
+  .rf { margin: var(--space-8) 0; padding-top: var(--space-4); border-top: var(--rule); }
+  .rf__scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .rf__svg { display: block; width: 100%; min-width: 680px; height: auto; font-family: var(--font-display); }
+  .rf__node rect, .rf__node polygon { fill: var(--paper); stroke: var(--black); stroke-width: 2.5; }
+  .rf__node--jev rect { fill: var(--gold); }
+  .rf__node text, .rf__lane text { text-anchor: middle; font-weight: 700; font-size: 20px; fill: var(--black); }
+  .rf__small { font-family: var(--font-mono); font-weight: 400 !important; font-size: 13px !important; }
+  .rf__lane rect { stroke: var(--black); stroke-width: 2.5; }
+  .rf__lane--opus rect { fill: var(--black); } .rf__lane--opus text { fill: #fff; }
+  .rf__lane--sonnet rect { fill: var(--gold); }
+  .rf__lane--haiku rect { fill: var(--slab); }
+  .rf__edge { fill: none; stroke: var(--black); stroke-width: 2.5; }
+  .rf__edge--up { stroke-width: 3.5; stroke-dasharray: 9 6; }
+  .rf__edge--hard { stroke-width: 5; }
+  #rf-arrow path { fill: var(--black); }
+  .rf__lbl { font-family: var(--font-mono); font-size: 13px; fill: var(--ink-soft); }
+  .rf__lbl--strong { fill: var(--black); font-weight: 700; }
+  .rf__legend { margin: var(--space-3) 0 0; font-family: var(--font-mono); font-size: 12px; }
+  .sw { display: inline-block; width: 11px; height: 11px; margin: 0 6px -1px 14px; box-shadow: inset 0 0 0 1.5px var(--black); }
+  .sw:first-child { margin-left: 0; }
+  .sw--haiku { background: var(--slab); } .sw--sonnet { background: var(--gold); } .sw--opus { background: var(--black); }
+</style>
