@@ -1,0 +1,81 @@
+---
+// Retrieval check: 27 labelled queries, one square each, placed at the rank where the
+// correct source document landed. Figures from the build log: 26 at rank 1, 1 at rank 4.
+const rows = [
+  { rank: '1', count: 26, flagged: ['Company-residency tie-breaker', 'Pensions'] },
+  { rank: '2', count: 0 },
+  { rank: '3', count: 0 },
+  { rank: '4', count: 1, note: 'royalty-rate clause, crowded by a 121-chunk document sharing treaty-adjacent vocabulary.' },
+  { rank: '5+', count: 0 },
+];
+---
+
+<figure class="rank viz">
+  <div class="rank__head">
+    <p><span class="rank__num">27/27</span><span class="rank__cap">queries found the correct source document in the top five</span></p>
+    <p><span class="rank__num">26/27</span><span class="rank__cap">ranked it first</span></p>
+  </div>
+
+  <div class="rank__rows" role="img" aria-label="Rank of the correct document for 27 queries: 26 at rank 1, including two provisions that previously failed to retrieve, and 1 at rank 4, the royalty-rate clause. None at ranks 2, 3 or 5.">
+    {rows.map((row) => (
+      <div class="rank__row">
+        <span class="rank__label">Rank {row.rank}</span>
+        <span class="rank__cells">
+          {Array.from({ length: row.count }, (_, i) => {
+            const flag = row.flagged && i >= row.count - row.flagged.length;
+            return <span class:list={['cell', { 'cell--flag': flag, 'cell--late': row.rank === '4' }]} />;
+          })}
+          {row.count === 0 && <span class="rank__none">none</span>}
+        </span>
+        <span class="rank__count">{row.count}</span>
+        {row.flagged && (
+          <span class="rank__tags">
+            <span class="tag">previously failed to retrieve</span>
+            {row.flagged.map((f) => <span class="rank__flagname">{f}</span>)}
+          </span>
+        )}
+        {row.note && <span class="rank__note">{row.note}</span>}
+      </div>
+    ))}
+  </div>
+
+  <figcaption>
+    One query for each of the 24 documents in the corpus, plus three re-checks of provisions that had failed to retrieve earlier.
+    This measures whether the right file made the shortlist, not whether the exact paragraph carrying the answer was the chunk retrieved.
+  </figcaption>
+</figure>
+
+<style>
+  .rank { margin: var(--space-8) 0; padding-top: var(--space-4); border-top: var(--rule); }
+  .rank__head { display: flex; flex-wrap: wrap; gap: var(--space-4) var(--space-12); margin-bottom: var(--space-6); }
+  .rank__head p { display: flex; align-items: baseline; gap: 12px; margin: 0; max-width: 22rem; }
+  .rank__num { font-family: var(--font-display); font-weight: 700; font-size: clamp(40px, 4vw, 60px); line-height: 0.9; letter-spacing: var(--track-statement); }
+  .rank__cap { font-size: 0.9375rem; line-height: 1.35; }
+
+  .rank__rows { display: grid; gap: 10px; }
+  .rank__row {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr 2rem;
+    align-items: center;
+    column-gap: var(--space-3);
+    row-gap: 6px;
+  }
+  .rank__label { font-family: var(--font-mono); font-weight: 700; font-size: 12px; }
+  .rank__cells { display: flex; flex-wrap: wrap; gap: 3px; min-height: 18px; align-items: center; }
+  .cell { width: 16px; height: 16px; background: var(--black); }
+  .cell--flag { background: var(--gold); box-shadow: inset 0 0 0 2px var(--black); }
+  .cell--late { background: var(--paper); box-shadow: inset 0 0 0 2px var(--black); }
+  .rank__none { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
+  .rank__count { font-family: var(--font-mono); font-weight: 700; font-size: 13px; text-align: right; }
+  .rank__tags, .rank__note { grid-column: 2 / 4; }
+  .rank__tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 0.875rem; }
+  .tag { font-family: var(--font-mono); font-weight: 700; font-size: 11px; padding: 2px 6px; background: var(--gold); box-shadow: inset 0 0 0 1.5px var(--black); }
+  .rank__flagname::after { content: ','; }
+  .rank__flagname:last-child::after { content: ''; }
+  .rank__note { font-size: 0.9375rem; line-height: 1.45; padding-left: 10px; border-left: 3px solid var(--black); }
+  .rank figcaption { margin-top: var(--space-6); }
+  @media (max-width: 639px) {
+    .rank__row { grid-template-columns: 3.6rem 1fr 1.5rem; }
+    .cell { width: 11px; height: 11px; }
+  }
+</style>

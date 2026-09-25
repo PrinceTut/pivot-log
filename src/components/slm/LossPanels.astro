@@ -1,0 +1,72 @@
+---
+// Validation run vs final run. Top: eval/loss, drawn as shape only (both smooth and declining).
+// Bottom: <think>-block discipline on the 35-example holdout, 17/35 vs 13/35 (from the build log).
+const HOLDOUT = 35;
+const runs = [
+  { name: 'Validation run', think: 17, curve: 'M4 10 C 40 58, 80 76, 196 84' },
+  { name: 'Final run', think: 13, curve: 'M4 14 C 36 60, 84 78, 196 86' },
+];
+const best = Math.max(...runs.map((r) => r.think));
+---
+
+<figure class="loss viz">
+  <div class="loss__grid">
+    <span class="loss__rowlabel loss__rowlabel--top">eval/loss</span>
+    <span class="loss__rowlabel loss__rowlabel--bottom">&lt;think&gt; blocks correct, 35-example holdout</span>
+    {runs.map((run, i) => (
+      <div class="loss__col" style={`--col:${i + 2}`}>
+        <p class="loss__run">{run.name}</p>
+        <svg class="loss__curve" viewBox="0 0 200 96" aria-hidden="true">
+          <line x1="4" y1="92" x2="196" y2="92" />
+          <path d={run.curve} />
+        </svg>
+        <div class="loss__think">
+          <p class="loss__score"><span>{run.think}</span>/{HOLDOUT}</p>
+          <div class="loss__cells" role="img" aria-label={`${run.name}: ${run.think} of ${HOLDOUT} think blocks correct`}>
+            {Array.from({ length: HOLDOUT }, (_, k) => (
+              <span class:list={['c', { 'c--on': k < run.think, 'c--lost': k >= run.think && k < best }]} />
+            ))}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+  <figcaption>
+    Loss curves drawn as shape only: both runs trained smoothly with nothing in the curve to flag a problem.
+    The drop from 17 to 13 correct reasoning blocks, outlined in red, only appeared in a manual read of the holdout.
+  </figcaption>
+</figure>
+
+<style>
+  .loss { margin: var(--space-8) 0; padding-top: var(--space-4); border-top: var(--rule); }
+  .loss__grid {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    column-gap: var(--space-6);
+    row-gap: var(--space-3);
+  }
+  .loss__col { grid-column: var(--col); grid-row: 1 / span 3; display: grid; grid-template-rows: subgrid; }
+  .loss__rowlabel { grid-column: 1; font-family: var(--font-mono); font-size: 12px; line-height: 1.4; align-self: center; }
+  .loss__rowlabel--top { grid-row: 2; }
+  .loss__rowlabel--bottom { grid-row: 3; }
+  .loss__run { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1rem; }
+  .loss__curve { width: 100%; height: auto; display: block; background: var(--slab); }
+  .loss__curve line { stroke: var(--ink-soft); stroke-width: 1; }
+  .loss__curve path { fill: none; stroke: var(--black); stroke-width: 2.5; stroke-linecap: round; }
+  .loss__think { padding-top: var(--space-3); border-top: 2px solid var(--black); }
+  .loss__score { margin: 0 0 8px; font-family: var(--font-mono); font-size: 13px; }
+  .loss__score span { font-family: var(--font-display); font-weight: 700; font-size: 2.25rem; letter-spacing: var(--track-statement); }
+  .loss__cells { display: grid; grid-template-columns: repeat(7, 14px); gap: 3px; }
+  .c { width: 14px; height: 14px; box-shadow: inset 0 0 0 1.5px var(--black); }
+  .c--on { background: var(--black); }
+  .c--lost { box-shadow: inset 0 0 0 2.5px var(--negative); }
+  .loss figcaption { margin-top: var(--space-6); }
+  @media (max-width: 639px) {
+    .loss__grid { grid-template-columns: 1fr 1fr; column-gap: var(--space-4); }
+    .loss__col { grid-column: calc(var(--col) - 1); }
+    .loss__rowlabel { display: none; }
+    .loss__cells { grid-template-columns: repeat(7, 11px); }
+    .c { width: 11px; height: 11px; }
+  }
+</style>

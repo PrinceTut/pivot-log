@@ -154,3 +154,8 @@
   .timeline-entry { grid-template-columns: 1fr; gap: var(--space-1); }
   .piece table { display: block; overflow-x: auto; }
 }
+
+/* Small summary text box (e.g. under the LoRA explorer) */
+.textbox { margin: 0 0 var(--space-8); font-size: 1rem; line-height: 1.55; }
+.textbox__label { font-family: var(--font-mono); font-weight: 700; font-size: 12px; margin: 0 0 6px !important; }
+.textbox p:last-child { margin-bottom: 0; }

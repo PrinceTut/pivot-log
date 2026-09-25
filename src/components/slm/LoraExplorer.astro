@@ -1,0 +1,168 @@
+---
+// Qwen3-4B architecture (published config): hidden 2560, feed-forward 9728, 36 layers,
+// 32 query heads and 8 key/value heads of size 128, vocabulary 151,936, tied embeddings.
+// LoRA adapters on all seven attention and feed-forward projections (Unsloth's default).
+const H = 2560, FF = 9728, LAYERS = 36, Q = 32 * 128, KV = 8 * 128, VOCAB = 151936;
+const perLayer = H * Q + 2 * H * KV + Q * H + 3 * H * FF + 2 * 128 + 2 * H;
+const TOTAL = LAYERS * perLayer + VOCAB * H + H;
+const loraPerRank = LAYERS * ((H + Q) + 2 * (H + KV) + (Q + H) + 2 * (H + FF) + (FF + H));
+const RANKS = [4, 8, 16, 32, 64];
+const USED = 16;
+const CELLS = 10000;
+const EMBED_ROWS = Math.round((VOCAB * H / TOTAL) * 100);
+
+const info = RANKS.map((r) => {
+  const params = r * loraPerRank;
+  return { r, params, pct: (params / TOTAL) * 100, cells: Math.round((params / TOTAL) * CELLS) };
+});
+// Lit order: right-hand columns of the layer region, every other row first, so even a small
+// adapter visibly spans every layer.
+const layerRows = Array.from({ length: 100 - EMBED_ROWS }, (_, i) => EMBED_ROWS + i);
+const rowOrder = [...layerRows.filter((_, i) => i % 2 === 0), ...layerRows.filter((_, i) => i % 2 === 1)];
+const order: [number, number][] = [];
+for (let col = 99; col >= 90; col--) for (const row of rowOrder) order.push([col, row]);
+const used = info.find((x) => x.r === USED)!;
+const fmt = (n: number) => (n / 1e6).toFixed(1);
+const readout = (x: typeof used) => `Rank ${x.r}: about ${fmt(x.params)} million of ${(TOTAL / 1e9).toFixed(2)} billion parameters train, ${x.pct.toFixed(2)}% of the model.`;
+---
+
+<details class="lora viz">
+  <summary>
+    <span class="lora__title">See what LoRA actually trains</span>
+    <span class="lora__opt">Optional</span>
+  </summary>
+  <div class="lora__body" data-order={JSON.stringify(order)} data-info={JSON.stringify(info.map(({ r, cells }) => ({ r, cells })))}>
+    <p class="lora__label">Under 1% of the model actually trains.</p>
+    <div class="lora__stage">
+      <div class="lora__axis" aria-hidden="true">
+        <span style={`height:${EMBED_ROWS}%`}>Embeddings</span>
+        <span style={`height:${100 - EMBED_ROWS}%`}>36 transformer layers</span>
+      </div>
+      <svg class="lora__grid" viewBox="0 0 1000 1000" role="img" aria-label={`The Qwen3-4B model drawn as 10,000 squares of about 400,000 parameters each. ${readout(used)}`}>
+        <defs>
+          <pattern id="lora-cell" width="10" height="10" patternUnits="userSpaceOnUse">
+            <rect x="1" y="1" width="8" height="8" class="frozen" />
+          </pattern>
+        </defs>
+        <rect width="1000" height="1000" fill="url(#lora-cell)" />
+        <line x1="0" x2="1000" y1={EMBED_ROWS * 10} y2={EMBED_ROWS * 10} class="lora__split" />
+        <g class="lora__lit">
+          {order.slice(0, used.cells).map(([c, r]) => <rect x={c * 10 + 1} y={r * 10 + 1} width="8" height="8" />)}
+        </g>
+      </svg>
+    </div>
+    <div class="lora__controls">
+      <span class="lora__ctl-label" id="lora-rank-label">Adapter rank</span>
+      <div class="lora__ranks" role="group" aria-labelledby="lora-rank-label">
+        {info.map((x) => (
+          <button type="button" data-rank={x.r} data-readout={readout(x)} aria-pressed={x.r === USED ? 'true' : 'false'}>
+            {x.r}{x.r === USED && <span class="lora__used">used</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+    <p class="lora__readout" aria-live="polite">{readout(used)}</p>
+    <p class="lora__legend"><span class="sw sw--frozen"></span>Frozen base model <span class="sw sw--lit"></span>Trainable adapters. Each square is about 400,000 parameters.</p>
+  </div>
+</details>
+
+<script>
+  function setupLora() {
+    document.querySelectorAll<HTMLElement>('.lora__body').forEach((body) => {
+      if (body.dataset.ready) return;
+      body.dataset.ready = '1';
+      const order: [number, number][] = JSON.parse(body.dataset.order || '[]');
+      const info: { r: number; cells: number }[] = JSON.parse(body.dataset.info || '[]');
+      const lit = body.querySelector('.lora__lit');
+      const readout = body.querySelector('.lora__readout');
+      const buttons = Array.from(body.querySelectorAll<HTMLButtonElement>('button[data-rank]'));
+      buttons.forEach((b) => {
+        b.addEventListener('click', () => {
+          const r = Number(b.dataset.rank);
+          const target = info.find((x) => x.r === r);
+          if (!lit || !target) return;
+          buttons.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+          const have = lit.children.length;
+          if (target.cells > have) {
+            for (let i = have; i < target.cells; i++) {
+              const [c, row] = order[i];
+              const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+              rect.setAttribute('x', String(c * 10 + 1)); rect.setAttribute('y', String(row * 10 + 1));
+              rect.setAttribute('width', '8'); rect.setAttribute('height', '8');
+              rect.style.animationDelay = `${(i - have) * 3}ms`;
+              rect.classList.add('is-new');
+              lit.appendChild(rect);
+            }
+          } else {
+            while (lit.children.length > target.cells) lit.lastElementChild?.remove();
+          }
+          if (readout && b.dataset.readout) readout.textContent = b.dataset.readout;
+        });
+      });
+    });
+  }
+  document.addEventListener('astro:page-load', setupLora);
+</script>
+
+<style>
+  .lora { margin: var(--space-8) 0 var(--space-3); border: 2px solid var(--black); }
+  .lora summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+    padding: 14px 16px;
+    cursor: pointer;
+    list-style: none;
+    background: var(--gold);
+  }
+  .lora summary::-webkit-details-marker { display: none; }
+  .lora__title { font-family: var(--font-display); font-weight: 700; font-size: 1.125rem; }
+  .lora__title::before { content: '+'; display: inline-block; width: 1.1em; font-family: var(--font-mono); }
+  .lora[open] .lora__title::before { content: '\2212'; }
+  .lora__opt { font-family: var(--font-mono); font-size: 12px; }
+  .lora summary:focus-visible { outline: 3px solid var(--black); outline-offset: -5px; }
+
+  .lora__body { background: var(--black); color: #fff; padding: var(--space-6) var(--space-6) var(--space-4); }
+  .lora__label { font-family: var(--font-display); font-weight: 700; font-size: clamp(22px, 2.4vw, 32px); line-height: 1.05; letter-spacing: var(--track-statement); color: var(--gold); margin: 0 0 var(--space-4); }
+  .lora__stage { display: grid; grid-template-columns: 7.5rem 1fr; gap: var(--space-3); max-width: 36rem; }
+  .lora__axis { display: flex; flex-direction: column; font-family: var(--font-mono); font-size: 11px; color: #9aa0a6; text-align: right; }
+  .lora__axis span { display: flex; align-items: center; justify-content: flex-end; border-right: 1px solid #50565d; padding-right: 8px; }
+  .lora__grid { display: block; width: 100%; height: auto; }
+  .frozen { fill: #2e3237; }
+  .lora__split { stroke: #6b7178; stroke-width: 2; }
+  .lora__lit :global(rect) { fill: var(--gold); }
+  @media (prefers-reduced-motion: no-preference) {
+    .lora__lit :global(rect.is-new) { animation: lora-in 0.35s ease both; }
+  }
+  @keyframes lora-in { from { opacity: 0; } }
+
+  .lora__controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: var(--space-4); }
+  .lora__ctl-label { font-family: var(--font-mono); font-size: 12px; color: #c9ccd0; }
+  .lora__ranks { display: flex; gap: 6px; }
+  .lora__ranks button {
+    position: relative;
+    min-width: 3rem;
+    padding: 8px 10px 16px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1rem;
+    color: #fff;
+    background: transparent;
+    border: 2px solid #6b7178;
+    cursor: pointer;
+  }
+  .lora__ranks button[aria-pressed='true'] { background: var(--gold); color: var(--black); border-color: var(--gold); }
+  .lora__ranks button:hover { border-color: #fff; }
+  .lora__ranks button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .lora__used { position: absolute; left: 0; right: 0; bottom: 2px; font-family: var(--font-mono); font-weight: 400; font-size: 10px; }
+  .lora__readout { margin: var(--space-4) 0 var(--space-2); font-size: 1rem; }
+  .lora__legend { margin: 0; font-family: var(--font-mono); font-size: 11px; color: #9aa0a6; }
+  .sw { display: inline-block; width: 10px; height: 10px; margin: 0 6px -1px 0; }
+  .sw--frozen { background: #2e3237; }
+  .sw--lit { background: var(--gold); margin-left: 12px; }
+  @media (max-width: 639px) {
+    .lora__body { padding: var(--space-4); }
+    .lora__stage { grid-template-columns: 5.5rem 1fr; }
+  }
+</style>
