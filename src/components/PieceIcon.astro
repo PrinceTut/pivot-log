@@ -9,10 +9,11 @@
 //     encryption the note says upholds "net banking and UPI".
 //   ultron: agents wired to one central message board; the founding agent
 //     (PHASEONE10841, who established the board) filled.
-//   jev-system-one: ten category bars with one answer filled: Jev returns one typed answer
-//     with a probability across the categories you defined.
-//   market-manipulation: a row of stocks as outlined bars; the one name the model keeps
-//     picking is filled and far taller, money concentrating in a single pocket.
+//   jev-system-one: the router. A task goes into Jev (the filled decision diamond), which
+//     branches to the three Claude tiers; the top lane, Opus, is filled because low
+//     confidence and compliance always route up to it.
+//   market-manipulation: an annual report with a trend line and one line redacted: companies
+//     reshaping their filings so an automated LLM screen picks them up favourably.
 interface Props { slug: string; }
 const { slug } = Astro.props;
 
@@ -24,9 +25,9 @@ const agents = slug === 'ultron'
   ? [[14,14],[50,14],[86,14],[14,50],[86,50],[14,86],[50,86],[86,86]].map(([x, y], i) => ({ x, y, on: i === 0 }))
   : [];
 const isHack = slug === 'end2end-hackerman';
-const bars = slug === 'market-manipulation' ? [30, 44, 36, 88, 40, 26].map((h, i) => ({ x: 8 + i * 14.5, h, on: i === 3 })) : [];
-const dist = slug === 'jev-system-one' ? Array.from({ length: 10 }, (_, i) => ({ x: 6 + i * 9, on: i === 3 })) : [];
-const known = grid.length > 0 || layers.length > 0 || agents.length > 0 || isHack || bars.length > 0 || dist.length > 0;
+const isReport = slug === 'market-manipulation';
+const isRouter = slug === 'jev-system-one';
+const known = grid.length > 0 || layers.length > 0 || agents.length > 0 || isHack || isReport || isRouter;
 ---
 
 {known && (
@@ -43,16 +44,24 @@ const known = grid.length > 0 || layers.length > 0 || agents.length > 0 || isHac
           {[0,1,2,3,4,5].map((i) => <rect x={9 + i * 14} y="80" width="12" height="11" class="cell" />)}
         </g>
       )}
-      {dist.length > 0 && (
+      {isRouter && (
         <g>
-          {dist.map((d) => <rect x={d.x} y={d.on ? 10 : 84} width="6" height={d.on ? 82 : 8} class:list={['cell', { on: d.on }]} />)}
-          <line x1="3" y1="92" x2="97" y2="92" class="line" />
+          <rect x="4" y="42" width="16" height="16" class="cell" />
+          <path d="M20 50 H34 M60 50 H68 V14 H78 M68 50 H78 M68 50 V86 H78" class="line" />
+          <polygon points="47,37 60,50 47,63 34,50" class="cell on" />
+          <rect x="78" y="6" width="16" height="16" class="cell on" />
+          <rect x="78" y="42" width="16" height="16" class="cell" />
+          <rect x="78" y="78" width="16" height="16" class="cell" />
         </g>
       )}
-      {bars.length > 0 && (
+      {isReport && (
         <g>
-          {bars.map((b) => <rect x={b.x} y={92 - b.h} width="11" height={b.h} class:list={['cell', { on: b.on }]} />)}
-          <line x1="4" y1="92" x2="96" y2="92" class="line" />
+          <path d="M16 4 H66 L84 22 V96 H16 Z" class="cell bg" />
+          <path d="M66 4 V22 H84" class="line" />
+          <polyline points="24,44 36,34 46,40 58,24 74,30" class="line" />
+          <rect x="24" y="56" width="50" height="4" class="cell" />
+          <rect x="24" y="68" width="34" height="9" class="cell on" />
+          <rect x="24" y="84" width="44" height="4" class="cell" />
         </g>
       )}
       {agents.length > 0 && (

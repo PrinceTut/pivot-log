@@ -77,6 +77,7 @@ function setup() {
   const stage = document.getElementById('stage');
   const hero = document.getElementById('hero');
   const finale = document.getElementById('finale');
+  const fnav = document.getElementById('fnav');
   const steps = document.getElementById('steps');
   const halvesEl = document.getElementById('halves');
   const actor = document.getElementById('actor');
@@ -366,7 +367,9 @@ function setup() {
     function renderRaw(s: number) {
       hero!.style.setProperty('--p', seg(s, 0, PHASE.hero).toFixed(4));
       hero!.classList.toggle('is-revealed', seg(s, 0, PHASE.hero) >= 0.7);
-      finale!.style.setProperty('--p', seg(s, START.white, START.white + PHASE.white).toFixed(4));
+      const white = seg(s, START.white, START.white + PHASE.white);
+      finale!.style.setProperty('--p', white.toFixed(4));
+      fnav?.classList.toggle('is-cued', white >= 0.2);
       steps!.style.setProperty('--p', seg(s, START.steps, START.steps + PHASE.steps).toFixed(4));
     }
 
@@ -397,6 +400,7 @@ function setup() {
       hero.style.removeProperty('--p');
       hero.classList.remove('is-revealed');
       finale.style.removeProperty('--p');
+      fnav?.classList.remove('is-cued');
       steps.style.removeProperty('--p');
       halvesEl.innerHTML = '';
       krackleG.innerHTML = '';

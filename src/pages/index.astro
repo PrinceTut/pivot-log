@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import GlassPill from '../components/GlassPill.astro';
+import CtaButton from '../components/CtaButton.astro';
 import StarBadge from '../components/StarBadge.astro';
 import Footer from '../components/Footer.astro';
 import { withBase } from '../utils/url';
@@ -20,10 +21,10 @@ const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100
   <div class="stage" id="stage" data-base={withBase('/')}>
 
     <div class="finale" id="finale">
-      <nav class="fnav rv" style="--a:.02; --b:.20" aria-label="Main">
-        <GlassPill href={withBase('/projects')} label="Projects" size="sm" />
-        <GlassPill href={withBase('/scratchnotes')} label="Scratchnotes" size="sm" />
-        <GlassPill href={REPO_URL} label="Git Repo" size="sm" external />
+      <nav class="fnav rv" id="fnav" style="--a:.02; --b:.20" aria-label="Main">
+        <CtaButton href={withBase('/projects')} label="Projects" />
+        <CtaButton href={withBase('/scratchnotes')} label="Scratchnotes" />
+        <CtaButton href={REPO_URL} label="Git Repo" kind="secondary" external />
       </nav>
       <div class="finale__main">
         <div class="wp">
@@ -271,8 +272,25 @@ const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100
   /* ---------------- WHITE SECTION + FOOTER ---------------- */
   .finale { --p: 1; position: relative; background: var(--paper); }
   .stage.is-pinned > .finale { display: flex; flex-direction: column; z-index: 1; }
-  .fnav { display: flex; justify-content: flex-end; align-items: center; gap: 10px; height: 70px; padding: 14px var(--gutter) 0; }
+  .fnav { display: flex; justify-content: flex-end; align-items: center; gap: 12px; height: 84px; padding: 20px var(--gutter) 0; }
   .stage.is-pinned .fnav { position: absolute; top: 0; left: 0; right: 0; z-index: 5; }
+  .stage.is-pinned .fnav:not(.is-cued) { pointer-events: none; }
+  /* Once the buttons have fully appeared: one gold ring pulse and an arrow nudge, left to right */
+  @media (prefers-reduced-motion: no-preference) {
+    .fnav.is-cued :global(.cta) { animation: cta-ring 1.1s ease-out both; }
+    .fnav.is-cued :global(.cta__arrow) { animation: cta-nudge 1.1s ease-in-out both; }
+    .fnav.is-cued :global(.cta:nth-child(2)), .fnav.is-cued :global(.cta:nth-child(2) .cta__arrow) { animation-delay: 0.15s; }
+    .fnav.is-cued :global(.cta:nth-child(3)), .fnav.is-cued :global(.cta:nth-child(3) .cta__arrow) { animation-delay: 0.3s; }
+  }
+  @keyframes cta-ring {
+    0% { box-shadow: 0 0 0 0 rgba(242, 205, 83, 0.95); }
+    100% { box-shadow: 0 0 0 14px rgba(242, 205, 83, 0); }
+  }
+  @keyframes cta-nudge {
+    0%, 100% { translate: 0 0; }
+    25%, 65% { translate: 5px 0; }
+    45% { translate: 0 0; }
+  }
   .finale__main {
     --u: min(calc(100cqw / 1920), calc((100svh - 206px) / 860));
     display: grid;

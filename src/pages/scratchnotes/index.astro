@@ -47,6 +47,7 @@ const intro = 'A place to write about things I find important and want to think 
     margin: 0 auto;
   }
   .card {
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
     border: 2px solid var(--black);
@@ -68,23 +69,21 @@ const intro = 'A place to write about things I find important and want to think 
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
+  /* Icon on its own row, so the title always gets the card's full width: long single words
+     (MANIPULATION) never collide with it, whatever the card width. */
   .card__body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 96px;
-    grid-template-areas: "title icon" "dek dek";
-    gap: 14px 18px;
-    align-content: start;
-    padding: 22px 16px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 16px 28px;
     flex: 1;
   }
-  .card__icon { grid-area: icon; display: block; width: 96px; }
-  .card__title { grid-area: title; }
-  .card__dek { grid-area: dek; }
+  .card__icon { display: block; width: 84px; margin-bottom: 4px; }
   .card:hover :global(.piece-icon) { --icon-bg: var(--black); color: var(--gold); }
   .card__title {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: clamp(30px, 3vw, 46px);
+    font-size: min(clamp(30px, 3vw, 46px), 11.5cqi);
     line-height: 0.95;
     letter-spacing: var(--track-statement);
     text-transform: uppercase;
