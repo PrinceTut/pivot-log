@@ -1,6 +1,6 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { FRAMES, LOGO_SURFER } from './landing-frames';
+import { POSES, ORIGIN, LOGO_SURFER } from './landing-frames';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -15,7 +15,6 @@ const START = {
   rise: PHASE.hero + PHASE.a + PHASE.white + PHASE.steps,
 };
 const TOTAL = START.rise + PHASE.rise;
-const MAX_TILT = 20;
 const FOOTER_H = 96;
 const PIN_QUERY = '(min-width: 900px) and (prefers-reduced-motion: no-preference)';
 
@@ -23,7 +22,6 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const seg = (v: number, a: number, b: number) => clamp01((v - a) / (b - a));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const lerpPt = (p: Pt, q: Pt, t: number): Pt => ({ x: lerp(p.x, q.x, t), y: lerp(p.y, q.y, t) });
-const bump = (v: number, a: number, b: number) => (v > a && v < b ? Math.sin(Math.PI * seg(v, a, b)) : 0);
 const easeInOut = (t: number) => 0.5 - 0.5 * Math.cos(Math.PI * t);
 const center = (b: Box): Pt => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
 const rotateAround = (p: Pt, c: Pt, ang: number): Pt => {
@@ -45,30 +43,77 @@ function rng(seed: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-// Frame schedule for Sequence A: [start, frame].
-const FRAMES_A: [number, number][] = [[0, 0], [0.02, 1], [0.05, 2], [0.08, 3], [0.12, 4], [0.16, 5], [0.2, 6], [0.23, 7], [0.26, 8], [0.28, 9], [0.4, 10], [0.78, 11], [0.88, 0]];
-const frameAt = (v: number, table: [number, number][]) => {
-  let f = table[0][1];
-  for (const [start, frame] of table) if (v >= start) f = frame;
-  return f;
-};
-// While a frame still reuses the F00 artwork, 3D tilt and squash stand in for the missing pose.
-const isStandIn = (f: number) => FRAMES[f] === FRAMES[0];
+// Point at arc length d along a sampled polyline (lens = cumulative lengths).
+function atLength(pts: Pt[], lens: number[], d: number): Pt {
+  if (d <= 0) return pts[0];
+  const last = lens.length - 1;
+  if (d >= lens[last]) return pts[last];
+  let lo = 0, hi = last;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (lens[mid] < d) lo = mid; else hi = mid; }
+  return lerpPt(pts[lo], pts[hi], (d - lens[lo]) / ((lens[hi] - lens[lo]) || 1));
+}
+function cumulative(pts: Pt[]): number[] {
+  const lens = [0];
+  for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+  return lens;
+}
+
+// Sequence A pose changes, in Sequence A progress (0..1): [start, end, from pose, to pose].
+// Pose indices follow POSES: 0 rest (logo), 1 crouch, 2 rise, 3 stand, 4 launch, 5 seated.
+const CHANGES: [number, number, number, number][] = [
+  [0.01, 0.07, 0, 1],
+  [0.08, 0.13, 1, 2],
+  [0.14, 0.19, 2, 3],
+  [0.22, 0.27, 3, 4],
+  [0.78, 0.86, 4, 5],
+  [0.88, 0.93, 5, 0],
+];
+// The board tilt eases over a slightly wider window than the image change, so the rotation leads and trails the blend.
+const ANGLE_PAD = 0.012;
+// Share of each change spent fading the new pose in on top; the rest fades the old pose out underneath.
+const BLEND_IN = 0.4;
+const FLIGHT = { a: 0.28, b: 0.62 };
+// Lean limits: a light nose-down lean on the drop, a stronger nose-up lean on the climb.
+const BANK = { dive: 12, climb: 24, diveGain: 0.3, climbGain: 0.5, span: 0.18 };
 
 interface Geo {
   W: number; H: number; foot: Box; sL: number; sC: number;
-  L: Pt; C: Pt; Cp: Pt; S: Pt; F: Pt; seg1: Pt[]; seg2: Pt[];
-  trail: Pt[]; lens: number[]; iS: number; iCp: number; hole: Pt; footTop: number;
+  L: Pt; C: Pt; Cp: Pt;
+  path: Pt[]; pathLens: number[]; len1: number;
+  trail: Pt[]; lens: number[]; iS: number; hole: Pt;
 }
-interface Pose { p: Pt; s: number; frame: number; rz: number; ry: number; sy: number; }
 
 let mm: gsap.MatchMedia | null = null;
 let framesReady = false;
+let onFramesReady: (() => void) | null = null;
 
 async function preloadFrames(base: string) {
-  const unique = Array.from(new Set(FRAMES));
-  await Promise.all(unique.map((src) => { const img = new Image(); img.src = base + src; return img.decode().catch(() => undefined); }));
+  await Promise.all(POSES.map((pose) => { const img = new Image(); img.src = base + pose.file; return img.decode().catch(() => undefined); }));
   framesReady = true;
+  onFramesReady?.();
+}
+
+// Opacity of every pose image at Sequence A progress a. Two-phase blend: the incoming pose
+// fades in on top of the fully opaque outgoing pose, then the outgoing pose fades out underneath,
+// so the figure is never see-through at the midpoint.
+function poseWeights(a: number): { w: number[]; top: number } {
+  const w = POSES.map(() => 0);
+  let settled = 0;
+  for (const [a0, a1, from, to] of CHANGES) {
+    if (a < a0) break;
+    if (a >= a1) { settled = to; continue; }
+    const t = easeInOut(seg(a, a0, a1));
+    w[from] = Math.min(1, (1 - t) / (1 - BLEND_IN));
+    w[to] = Math.min(1, t / BLEND_IN);
+    return { w, top: to };
+  }
+  w[settled] = 1;
+  return { w, top: settled };
+}
+function boardAngle(a: number): number {
+  let ang = POSES[0].angle;
+  for (const [a0, a1, from, to] of CHANGES) ang += (POSES[to].angle - POSES[from].angle) * easeInOut(seg(a, Math.max(0.002, a0 - ANGLE_PAD), a1 + ANGLE_PAD));
+  return ang;
 }
 
 function setup() {
@@ -95,11 +140,11 @@ function setup() {
   if (!stage || !hero || !finale || !steps || !halvesEl || !actor || !corner || !cornerType || !footSurfer || !trail || !trailInk || !trailG || !krackleG || !speedG || !burst || !fx || !warp) return;
 
   const base = (stage.dataset.base ?? '/').replace(/\/?$/, '/');
-  void preloadFrames(base);
-  const imgs = Array.from(actor.querySelectorAll<HTMLImageElement>('img'));
+  const imgs = POSES.map((pose) => actor.querySelector<HTMLImageElement>(`img[data-pose="${pose.name}"]`));
   const poseFound = actor.querySelector<HTMLElement>('.actor__pose');
-  if (!poseFound) return;
+  if (!poseFound || imgs.some((im) => !im)) return;
   const poseEl: HTMLElement = poseFound;
+  const poseImgs = imgs as HTMLImageElement[];
   const num = actor.querySelector<HTMLElement>('.actor__num');
   if (new URLSearchParams(location.search).get('frames') === 'debug') actor.dataset.debug = '1';
 
@@ -112,7 +157,7 @@ function setup() {
     const halves = ['l', 'r'].map((side) => {
       const half = document.createElement('div');
       half.className = `half half--${side}`;
-      for (const a of Array.from(hero.parentElement!.attributes)) if (a.name.startsWith('data-astro-cid')) half.setAttribute(a.name, a.value);
+      for (const at of Array.from(hero.parentElement!.attributes)) if (at.name.startsWith('data-astro-cid')) half.setAttribute(at.name, at.value);
       const clone = hero.cloneNode(true) as HTMLElement;
       clone.removeAttribute('id');
       clone.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
@@ -140,7 +185,11 @@ function setup() {
     });
 
     let g: Geo | null = null;
-    let lastKey = '';
+    let lastS = -1;
+    let lastReady = false;
+    let clipKey = '';
+    const shownOpacity = POSES.map(() => '');
+    let shownTop = -1;
 
     const rel = (el: Element): Box => {
       const sr = stage.getBoundingClientRect(), b = el.getBoundingClientRect();
@@ -155,24 +204,26 @@ function setup() {
       const logo = slotOf({ x: hx + 703 * uh, y: hy + 282 * uh, w: 515 * uh, h: 370 * uh });
       const cornerSlot = slotOf(rel(cornerType!));
       const foot = rel(footSurfer!);
-      const L = center(logo), C = center(cornerSlot), F = center(foot);
-      const S = { x: 0.52 * W, y: 0.8 * H };
-      const Cp = { x: C.x + 0.06 * W, y: C.y + 0.09 * H };
-      const seg1 = [L, { x: L.x - 0.08 * W, y: L.y + 0.15 * H }, { x: S.x + 0.12 * W, y: S.y - 0.05 * H }, S];
-      const seg2 = [S, { x: S.x - 0.1 * W, y: S.y - 0.04 * H }, { x: Cp.x + 0.32 * W, y: Cp.y + 0.26 * H }, Cp];
-      const E = { x: S.x + 0.03 * W, y: H + 80 }, T = { x: Cp.x - 0.1 * W, y: -160 };
-      const pts: Pt[] = [E, S];
-      for (let i = 1; i <= 60; i++) pts.push(cubic(seg2, i / 60));
-      pts.push(T);
-      const lens = [0];
-      for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
-      const half = lens[lens.length - 1] / 2;
-      let hi = 1; while (lens[hi] < half) hi++;
-      const hole = lerpPt(pts[hi - 1], pts[hi], (half - lens[hi - 1]) / (lens[hi] - lens[hi - 1]));
-      return {
-        W, H, foot, sL: logo.w / foot.w, sC: cornerSlot.w / foot.w, L, C, Cp, S, F, seg1, seg2,
-        trail: pts, lens, iS: 1, iCp: pts.length - 2, hole, footTop: H - FOOTER_H,
-      };
+      const L = center(logo), C = center(cornerSlot);
+      const Cp = { x: C.x + 0.07 * W, y: C.y + 0.16 * H };
+      // Drop from the logo to a low point just under the bottom edge, then sweep up and left to the corner.
+      // Both curves share a horizontal tangent at S, so the turn at the bottom has no kink.
+      const S = { x: L.x - 0.02 * W, y: 1.04 * H };
+      const seg1 = [L, { x: L.x, y: L.y + 0.28 * H }, { x: S.x + 0.16 * W, y: S.y }, S];
+      const seg2 = [S, { x: S.x - 0.22 * W, y: S.y }, { x: Cp.x + 0.14 * W, y: Cp.y + 0.3 * H }, Cp];
+      const N = 80;
+      const s1: Pt[] = [], s2: Pt[] = [];
+      for (let i = 0; i <= N; i++) s1.push(cubic(seg1, i / N));
+      for (let i = 0; i <= N; i++) s2.push(cubic(seg2, i / N));
+      const path = s1.concat(s2.slice(1));
+      const pathLens = cumulative(path);
+      const len1 = pathLens[N];
+      // The tear follows the sweep up: enters off-screen below S and leaves off-screen above the corner.
+      const E = { x: S.x + 0.2 * W, y: S.y + 0.02 * H }, T = { x: Cp.x - 0.02 * W, y: -160 };
+      const trailPts = [E, ...s2, T];
+      const lens = cumulative(trailPts);
+      const hole = atLength(s2, cumulative(s2), (pathLens[pathLens.length - 1] - len1) / 2);
+      return { W, H, foot, sL: logo.w / foot.w, sC: cornerSlot.w / foot.w, L, C, Cp, path, pathLens, len1, trail: trailPts, lens, iS: 1, hole };
     }
 
     function layout() {
@@ -184,53 +235,41 @@ function setup() {
       trail!.setAttribute('d', d);
       trailInk!.setAttribute('d', d);
       halves.forEach((h) => { h.style.transformOrigin = `${g!.hole.x}px ${g!.hole.y}px`; });
-      lastKey = ''; lastS = -1; clipKey = '';
+      lastS = -1; clipKey = '';
     }
 
-    // Flight progress: one eased curve over the swoop down and the sweep up (no stop at the bottom).
-    const flightV = (a: number) => easeInOut(seg(a, 0.28, 0.62));
-    const SPLIT = 0.45;
+    // Distance travelled along the flight path: eased once over the whole flight, constant shape speed.
+    const flightDist = (a: number) => easeInOut(seg(a, FLIGHT.a, FLIGHT.b)) * g!.pathLens[g!.pathLens.length - 1];
 
     function pathAt(a: number): { p: Pt; s: number } {
       const G = g!;
-      if (a < 0.28) {
-        const lift = a < 0.12 ? Math.sin(Math.PI * seg(a, 0.025, 0.1)) * 0.5 * G.foot.h * G.sL : 0;
-        return { p: { x: G.L.x, y: G.L.y - lift }, s: G.sL * (1 + 0.06 * easeInOut(seg(a, 0.12, 0.2))) };
-      }
-      if (a < 0.62) {
-        const v = flightV(a);
-        if (v < SPLIT) { const u = v / SPLIT; return { p: cubic(G.seg1, u), s: G.sL * lerp(1.06, 1.25, u) }; }
-        const u = (v - SPLIT) / (1 - SPLIT);
-        return { p: cubic(G.seg2, u), s: G.sL * lerp(1.25, 0.7, u) };
+      if (a < FLIGHT.a) return { p: G.L, s: G.sL * (1 + 0.06 * easeInOut(seg(a, 0.12, 0.22))) };
+      if (a < FLIGHT.b) {
+        const d = flightDist(a), total = G.pathLens[G.pathLens.length - 1];
+        const p = atLength(G.path, G.pathLens, d);
+        const s = d < G.len1 ? lerp(1.06, 1.25, d / G.len1) : lerp(1.25, 0.7, (d - G.len1) / (total - G.len1));
+        return { p, s: G.sL * s };
       }
       if (a < 0.78) {
-        const bob = Math.sin(seg(a, 0.62, 0.78) * Math.PI * 2) * 0.008 * G.H;
-        return { p: { x: G.Cp.x, y: G.Cp.y + bob }, s: G.sL * 0.7 };
+        const t = seg(a, FLIGHT.b, 0.78);
+        return { p: { x: G.Cp.x, y: G.Cp.y - 0.012 * G.H * (0.5 - 0.5 * Math.cos(2 * Math.PI * t)) }, s: G.sL * 0.7 };
       }
       const u = easeInOut(seg(a, 0.78, 0.92));
       return { p: lerpPt(G.Cp, G.C, u), s: lerp(G.sL * 0.7, G.sC, u) };
     }
 
-    function poseA(a: number): Pose {
-      const { p, s } = pathAt(a);
-      const frame = frameAt(a, FRAMES_A);
-      // Direction of travel (numerical derivative), used for tilt and bank while flying.
-      const q0 = pathAt(Math.max(0, a - 0.002)).p, q1 = pathAt(Math.min(1, a + 0.002)).p;
-      const vx = q1.x - q0.x, vy = q1.y - q0.y, vl = Math.hypot(vx, vy);
-      const dirX = vl > 1e-4 ? vx / vl : -1, dirY = vl > 1e-4 ? vy / vl : 0;
-      const flyRy = MAX_TILT * -dirX, flyRz = 14 * dirY;
-      let ry: number, rz: number;
-      if (a < 0.12) { ry = 0; rz = 0; }
-      else if (a < 0.2) { ry = 4 * easeInOut(seg(a, 0.12, 0.2)); rz = 0; }
-      else if (a < 0.28) { const t = easeInOut(seg(a, 0.2, 0.28)); ry = lerp(4, 18, t); rz = lerp(0, -6, t); }
-      else if (a < 0.62) { const t = easeInOut(seg(a, 0.28, 0.34)); ry = lerp(18, flyRy, t); rz = lerp(-6, flyRz, t); }
-      else {
-        const endRy = MAX_TILT, t = easeInOut(seg(a, 0.62, 0.9));
-        ry = lerp(endRy, 0, t); rz = lerp(-8, 0, easeInOut(seg(a, 0.62, 0.74)));
-      }
-      ry = Math.max(-MAX_TILT, Math.min(MAX_TILT, ry));
-      const sy = 1 - 0.07 * bump(a, 0, 0.025) + 0.05 * bump(a, 0.025, 0.1) - 0.06 * bump(a, 0.1, 0.135) - 0.05 * bump(a, 0.9, 0.96);
-      return { p, s, frame, rz, ry, sy };
+    // Bank into the direction of travel: nose up when climbing, nose down when diving. Rotation only, never a turn.
+    // The heading is the path's direction averaged over a stretch of the path either side of him, so the lean
+    // rolls smoothly through the turn at the bottom and stays steady while he slows into the hover.
+    function bankAt(a: number): number {
+      const weight = easeInOut(seg(a, FLIGHT.a, 0.34)) * (1 - easeInOut(seg(a, 0.6, 0.68)));
+      if (weight <= 0) return 0;
+      const G = g!, total = G.pathLens[G.pathLens.length - 1], span = BANK.span * total;
+      const d = a < FLIGHT.b ? flightDist(a) : total;
+      const q0 = atLength(G.path, G.pathLens, Math.max(0, Math.min(d, total - 2 * span) - span)), q1 = atLength(G.path, G.pathLens, Math.min(total, Math.max(d, 2 * span) + span));
+      const heading = (Math.atan2(-(q1.y - q0.y), Math.max(-(q1.x - q0.x), 0)) * 180) / Math.PI;
+      const lean = heading < 0 ? Math.max(-BANK.dive, BANK.diveGain * heading) : Math.min(BANK.climb, BANK.climbGain * heading);
+      return lean * weight;
     }
 
     function burstAt(c: Pt, R: number, spin: number, opacity: number) {
@@ -244,12 +283,10 @@ function setup() {
       burst!.style.opacity = opacity.toFixed(3);
     }
 
-    let lastS = -1;
-    let clipKey = '';
     function renderSeq(sm: number) {
       if (!g) return;
-      if (Math.abs(sm - lastS) < 1e-5 && lastKey === String(framesReady)) return;
-      lastS = sm; lastKey = String(framesReady);
+      if (Math.abs(sm - lastS) < 1e-5 && lastReady === framesReady) return;
+      lastS = sm; lastReady = framesReady;
       const G = g;
       const a = seg(sm, START.a, START.a + PHASE.a);
 
@@ -263,50 +300,51 @@ function setup() {
       stage!.classList.toggle('is-launched', a > 0.001);
       stage!.classList.toggle('is-split', a >= 0.64);
 
-      // Actor: movement on the outer box, pose (tilt, bank, squash) on the inner one
-      const pose = poseA(a);
+      // Actor: position and size on the outer box; pose images and board tilt on the inner layer
+      const { p, s } = pathAt(a);
       const show = a > 0.001;
       actor!.classList.toggle('is-on', show);
       if (show) {
-        const f = framesReady ? pose.frame : 0;
-        imgs.forEach((im, i) => im.classList.toggle('is-on', i === f));
-        if (num) num.textContent = `F${String(pose.frame).padStart(2, '0')}`;
-        const stand = isStandIn(f);
-        const ry = stand ? pose.ry : 0, sy = stand ? pose.sy : 1, sx = stand ? 2 - pose.sy : 1;
-        actor!.style.transform = `translate(${(pose.p.x - G.foot.w / 2).toFixed(2)}px, ${(pose.p.y - G.foot.h / 2).toFixed(2)}px) scale(${pose.s.toFixed(5)})`;
-        poseEl.style.transform = `perspective(1400px) rotateY(${ry.toFixed(2)}deg) rotateZ(${pose.rz.toFixed(2)}deg) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
+        const { w, top } = framesReady ? poseWeights(a) : { w: POSES.map((_, i) => (i === 0 ? 1 : 0)), top: 0 };
+        poseImgs.forEach((im, i) => {
+          const o = w[i] > 0.001 ? w[i].toFixed(3) : '0';
+          if (o !== shownOpacity[i]) { im.style.opacity = o; shownOpacity[i] = o; }
+        });
+        if (top !== shownTop) { poseImgs.forEach((im, i) => { im.style.zIndex = i === top ? '2' : '1'; }); shownTop = top; }
+        if (num) num.textContent = POSES[top].name;
+        const rot = -boardAngle(a) + bankAt(a);
+        actor!.style.transform = `translate(${(p.x - G.foot.w / 2).toFixed(2)}px, ${(p.y - G.foot.h / 2).toFixed(2)}px) scale(${s.toFixed(5)})`;
+        poseEl.style.transform = `rotate(${rot.toFixed(3)}deg)`;
       }
 
       // Contrail = the tear, drawn behind the board during the sweep up
       const total = G.lens[G.lens.length - 1];
-      const v = flightV(a);
       let reveal = 0;
-      if (a >= 0.28 && v >= SPLIT) {
-        const u = (v - SPLIT) / (1 - SPLIT);
-        const idx = G.iS + u * (G.iCp - G.iS), i0 = Math.floor(idx), fr = idx - i0;
-        reveal = lerp(G.lens[i0], G.lens[Math.min(i0 + 1, G.lens.length - 1)], fr);
-        if (a >= 0.62) reveal = lerp(G.lens[G.iCp], total, easeInOut(seg(a, 0.62, 0.645)));
+      if (a >= FLIGHT.b) reveal = lerp(G.lens[G.lens.length - 2], total, easeInOut(seg(a, FLIGHT.b, 0.645)));
+      else if (a >= FLIGHT.a) {
+        const past = flightDist(a) - G.len1;
+        if (past > 0) reveal = G.lens[G.iS] + past;
       }
-      const w = lerp(Math.max(10, 0.012 * G.W), 0.06 * G.W, easeInOut(seg(a, 0.62, 0.66)));
+      const wTear = lerp(Math.max(10, 0.012 * G.W), 0.06 * G.W, easeInOut(seg(a, 0.62, 0.66)));
       const trailO = 1 - seg(a, 0.72, 0.8);
       [trail!, trailInk!].forEach((pth) => {
         pth.style.strokeDasharray = `${total} ${total}`;
         pth.style.strokeDashoffset = `${total - reveal}`;
       });
       trailG!.style.opacity = reveal > 0 ? trailO.toFixed(3) : '0';
-      trail!.style.strokeWidth = `${w}`;
-      trailInk!.style.strokeWidth = `${w + 6}`;
+      trail!.style.strokeWidth = `${wTear}`;
+      trailInk!.style.strokeWidth = `${wTear + 6}`;
 
       // Yellow halves and black-hole collapse
       const split = a >= 0.64 && a < 0.82;
       if (split) {
-        const key = w.toFixed(1);
+        const key = wTear.toFixed(1);
         if (key !== clipKey) {
           clipKey = key;
           const off = (sign: number) => G.trail.map((pt, i) => {
             const q = G.trail[Math.min(i + 1, G.trail.length - 1)], o = G.trail[Math.max(i - 1, 0)];
             const dx = q.x - o.x, dy = q.y - o.y, len = Math.hypot(dx, dy) || 1;
-            return `${(pt.x + sign * (dy / len) * (w / 2)).toFixed(1)}px ${(pt.y - sign * (dx / len) * (w / 2)).toFixed(1)}px`;
+            return `${(pt.x + sign * (dy / len) * (wTear / 2)).toFixed(1)}px ${(pt.y - sign * (dx / len) * (wTear / 2)).toFixed(1)}px`;
           });
           const e0 = G.trail[0], t0 = G.trail[G.trail.length - 1];
           halves[0].style.clipPath = `polygon(${off(1).join(',')}, ${-3 * G.W}px ${t0.y}px, ${-3 * G.W}px ${e0.y}px)`;
@@ -334,7 +372,7 @@ function setup() {
         let i = 1; while (i < G.lens.length - 1 && G.lens[i] < Ld) i++;
         const p0 = G.trail[i - 1], p1 = G.trail[i], dx = p1.x - p0.x, dy = p1.y - p0.y, ln = Math.hypot(dx, dy) || 1;
         const on = lerpPt(p0, p1, (Ld - G.lens[i - 1]) / ((G.lens[i] - G.lens[i - 1]) || 1));
-        const dist = w / 2 + 4 + d.off * 0.22 * G.W;
+        const dist = wTear / 2 + 4 + d.off * 0.22 * G.W;
         const base0 = { x: on.x + d.side * (dy / ln) * dist, y: on.y - d.side * (dx / ln) * dist };
         const pulled = rotateAround(lerpPt(base0, G.hole, kk * kk), G.hole, d.side * kk * d.spin);
         const rad = d.rad * (G.W / 1440) * (1 - 0.7 * kk) * (a < 0.66 ? 0.6 : 1);
@@ -343,34 +381,36 @@ function setup() {
         d.el.setAttribute('r', rad.toFixed(1));
       });
 
-      // Speed lines while flying
-      if (show && a > 0.29 && a < 0.61) {
+      // Speed lines while flying, trailing behind the direction of travel
+      if (show && a > 0.3 && a < 0.61) {
         const q0 = pathAt(Math.max(0, a - 0.004)).p;
-        let vx = pose.p.x - q0.x, vy = pose.p.y - q0.y; const vl = Math.hypot(vx, vy) || 1; vx /= vl; vy /= vl;
-        const size = G.foot.w * pose.s, fade = Math.min(seg(a, 0.29, 0.33), 1 - seg(a, 0.57, 0.61));
+        let vx = p.x - q0.x, vy = p.y - q0.y; const vl = Math.hypot(vx, vy) || 1; vx /= vl; vy /= vl;
+        const size = G.foot.w * s, fade = Math.min(seg(a, 0.3, 0.35), 1 - seg(a, 0.56, 0.61));
         lines.forEach((l, i) => {
           const o = (i - 2.5) * 0.16 * size, back = 0.45 * size + (i % 2) * 0.12 * size, len = 0.5 * size + ((i * 37) % 5) * 0.06 * size;
-          const sx0 = pose.p.x - vx * back - vy * o, sy0 = pose.p.y - vy * back + vx * o;
+          const sx0 = p.x - vx * back - vy * o, sy0 = p.y - vy * back + vx * o;
           l.setAttribute('x1', sx0.toFixed(1)); l.setAttribute('y1', sy0.toFixed(1));
           l.setAttribute('x2', (sx0 - vx * len).toFixed(1)); l.setAttribute('y2', (sy0 - vy * len).toFixed(1));
           l.style.visibility = 'visible'; l.style.opacity = fade.toFixed(3);
         });
       } else lines.forEach((l) => { l.style.visibility = 'hidden'; });
 
-      // Landing burst after the hop
-      if (a >= 0.1 && a < 0.145) {
-        const t = seg(a, 0.1, 0.145);
-        burstAt({ x: pose.p.x, y: pose.p.y + 0.3 * G.foot.h * pose.s }, 0.42 * G.foot.w * pose.s * (0.7 + 0.5 * t), t * 0.6, 1 - t);
+      // Push-off burst at the tail of the board as he launches
+      if (a >= 0.255 && a < 0.33) {
+        const t = seg(a, 0.255, 0.33);
+        const L = G.L, bx = L.x + (ORIGIN.x - 0.5) * G.foot.w * G.sL * 1.06, by = L.y + (ORIGIN.y - 0.5) * G.foot.h * G.sL * 1.06;
+        const R = 0.34 * G.foot.w * G.sL * (0.55 + 0.6 * easeInOut(t));
+        burstAt({ x: bx + 0.22 * G.foot.w * G.sL, y: by + 0.04 * G.foot.h * G.sL }, R, t * 0.5, Math.min(1, 4 * t) * (1 - easeInOut(seg(t, 0.35, 1))));
       } else burst!.style.visibility = 'hidden';
     }
 
-    function renderRaw(s: number) {
-      hero!.style.setProperty('--p', seg(s, 0, PHASE.hero).toFixed(4));
-      hero!.classList.toggle('is-revealed', seg(s, 0, PHASE.hero) >= 0.7);
-      const white = seg(s, START.white, START.white + PHASE.white);
+    function renderRaw(sv: number) {
+      hero!.style.setProperty('--p', seg(sv, 0, PHASE.hero).toFixed(4));
+      hero!.classList.toggle('is-revealed', seg(sv, 0, PHASE.hero) >= 0.7);
+      const white = seg(sv, START.white, START.white + PHASE.white);
       finale!.style.setProperty('--p', white.toFixed(4));
       fnav?.classList.toggle('is-cued', white >= 0.2);
-      steps!.style.setProperty('--p', seg(s, START.steps, START.steps + PHASE.steps).toFixed(4));
+      steps!.style.setProperty('--p', seg(sv, START.steps, START.steps + PHASE.steps).toFixed(4));
     }
 
     const proxy = { s: 0 };
@@ -393,8 +433,11 @@ function setup() {
     renderRaw(pin.progress * TOTAL);
     proxy.s = pin.progress * TOTAL;
     renderSeq(proxy.s);
+    onFramesReady = () => { lastS = -1; renderSeq(proxy.s); };
+    void preloadFrames(base);
 
     return () => {
+      onFramesReady = null;
       stage.classList.remove('is-pinned', 'is-launched', 'is-split');
       ['--bigtype', '--corner-o', '--rise'].forEach((v) => stage.style.removeProperty(v));
       hero.style.removeProperty('--p');
@@ -408,6 +451,7 @@ function setup() {
       actor.classList.remove('is-on');
       actor.style.removeProperty('transform');
       poseEl.style.removeProperty('transform');
+      poseImgs.forEach((im) => { im.style.removeProperty('opacity'); im.style.removeProperty('z-index'); });
     };
   });
 }
