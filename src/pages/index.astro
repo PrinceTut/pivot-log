@@ -6,7 +6,7 @@ import StarBadge from '../components/StarBadge.astro';
 import Footer from '../components/Footer.astro';
 import { withBase } from '../utils/url';
 import { REPO_URL } from '../config';
-import { FRAMES, LOGO_SURFER } from '../scripts/landing-frames';
+import { FRAMES, FRAME_SIZE, CANVAS, LOGO_SURFER } from '../scripts/landing-frames';
 
 const steps = [
   { label: 'Question', text: 'Driven by curiosity, I usually start with a question.' },
@@ -120,9 +120,9 @@ const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100
       <img id="corner-type" src={withBase('/logo-type-sm.webp')} alt="" width="78" height="56" />
     </a>
 
-    <div class="actor" id="actor" aria-hidden="true">
+    <div class="actor" id="actor" aria-hidden="true" style={`--cl:${CANVAS.left * 100}%; --ct:${CANVAS.top * 100}%; --cw:${CANVAS.width * 100}%; --ch:${CANVAS.height * 100}%;`}>
       <div class="actor__pose">
-        {FRAMES.map((src, i) => <img src={withBase('/' + src)} alt="" data-frame={i} width="1400" height="1404" />)}
+        {FRAMES.map((src, i) => <img data-src={withBase('/' + src)} alt="" data-frame={i} width={FRAME_SIZE.width} height={FRAME_SIZE.height} decoding="async" />)}
       </div>
       <span class="actor__num"></span>
     </div>
@@ -153,9 +153,8 @@ const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100
   .stage.is-pinned .fx { display: block; position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; overflow: visible; }
   .defs { position: absolute; width: 0; height: 0; }
   .trail-g { opacity: 0; }
-  .trail-ink { fill: none; stroke: var(--black); stroke-linecap: round; stroke-linejoin: round; }
-  .trail { fill: none; stroke: var(--paper); stroke-linecap: round; stroke-linejoin: round; }
-  .speed line { stroke: var(--black); stroke-width: 3; stroke-linecap: round; visibility: hidden; }
+  .trail-ink { fill: var(--black); stroke: none; }
+  .trail { fill: var(--paper); stroke: none; }
   .krackle circle { fill: var(--black); }
   .burst { fill: #fff; stroke: var(--black); stroke-width: 4; stroke-linejoin: miter; visibility: hidden; }
 
@@ -166,7 +165,8 @@ const surferSlot = `left:${LOGO_SURFER.left * 100}%; top:${LOGO_SURFER.top * 100
   .stage.is-pinned .actor { display: block; position: absolute; left: 0; top: 0; z-index: 6; pointer-events: none; transform-origin: 50% 50%; visibility: hidden; }
   .actor.is-on { visibility: visible !important; }
   .actor__pose { position: absolute; inset: 0; transform-origin: 50% 50%; }
-  .actor img { position: absolute; inset: 0; width: 100%; height: 100%; visibility: hidden; }
+  /* Every frame shares one canvas that extends past the box (standing poses are taller than the logo pose) */
+  .actor img { position: absolute; left: var(--cl); top: var(--ct); width: var(--cw); height: var(--ch); max-width: none; visibility: hidden; opacity: 0; }
   .actor img.is-on { visibility: inherit; }
   .actor__num { display: none; }
   .actor[data-debug] .actor__num {

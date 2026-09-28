@@ -1,6 +1,6 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { FRAMES, LOGO_SURFER } from './landing-frames';
+import { POSE_CHANGES, LOGO_SURFER } from './landing-frames';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -15,7 +15,6 @@ const START = {
   rise: PHASE.hero + PHASE.a + PHASE.white + PHASE.steps,
 };
 const TOTAL = START.rise + PHASE.rise;
-const MAX_TILT = 20;
 const FOOTER_H = 96;
 const PIN_QUERY = '(min-width: 900px) and (prefers-reduced-motion: no-preference)';
 
@@ -23,7 +22,6 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const seg = (v: number, a: number, b: number) => clamp01((v - a) / (b - a));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const lerpPt = (p: Pt, q: Pt, t: number): Pt => ({ x: lerp(p.x, q.x, t), y: lerp(p.y, q.y, t) });
-const bump = (v: number, a: number, b: number) => (v > a && v < b ? Math.sin(Math.PI * seg(v, a, b)) : 0);
 const easeInOut = (t: number) => 0.5 - 0.5 * Math.cos(Math.PI * t);
 const center = (b: Box): Pt => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
 const rotateAround = (p: Pt, c: Pt, ang: number): Pt => {
@@ -45,30 +43,39 @@ function rng(seed: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-// Frame schedule for Sequence A: [start, frame].
-const FRAMES_A: [number, number][] = [[0, 0], [0.02, 1], [0.05, 2], [0.08, 3], [0.12, 4], [0.16, 5], [0.2, 6], [0.23, 7], [0.26, 8], [0.28, 9], [0.4, 10], [0.78, 11], [0.88, 0]];
-const frameAt = (v: number, table: [number, number][]) => {
-  let f = table[0][1];
-  for (const [start, frame] of table) if (v >= start) f = frame;
-  return f;
-};
-// While a frame still reuses the F00 artwork, 3D tilt and squash stand in for the missing pose.
-const isStandIn = (f: number) => FRAMES[f] === FRAMES[0];
+// Which frames show at Sequence A progress a: during a pose change the playhead eases through the in-between
+// frames; between changes it rests on the last key drawing. Returns [frame, next frame, blend 0..1].
+function framesAt(a: number): [number, number, number] {
+  let rest = 0;
+  for (const [a0, a1, seq] of POSE_CHANGES) {
+    if (a < a0) break;
+    if (a >= a1) { rest = seq[seq.length - 1]; continue; }
+    const pos = easeInOut(seg(a, a0, a1)) * (seq.length - 1);
+    const i = Math.min(seq.length - 2, Math.floor(pos));
+    return [seq[i], seq[i + 1], pos - i];
+  }
+  return [rest, rest, 0];
+}
 
 interface Geo {
   W: number; H: number; foot: Box; sL: number; sC: number;
   L: Pt; C: Pt; Cp: Pt; S: Pt; F: Pt; seg1: Pt[]; seg2: Pt[];
   trail: Pt[]; lens: number[]; iS: number; iCp: number; hole: Pt; footTop: number;
 }
-interface Pose { p: Pt; s: number; frame: number; rz: number; ry: number; sy: number; }
+interface Pose { p: Pt; s: number; rz: number; }
 
 let mm: gsap.MatchMedia | null = null;
 let framesReady = false;
+let onFramesReady: (() => void) | null = null;
 
-async function preloadFrames(base: string) {
-  const unique = Array.from(new Set(FRAMES));
-  await Promise.all(unique.map((src) => { const img = new Image(); img.src = base + src; return img.decode().catch(() => undefined); }));
+// Frames load only where the animation runs (desktop, motion allowed), so phones never download them.
+async function preloadFrames(imgs: HTMLImageElement[]) {
+  await Promise.all(imgs.map((img) => {
+    if (!img.getAttribute('src') && img.dataset.src) img.src = img.dataset.src;
+    return img.decode().catch(() => undefined);
+  }));
   framesReady = true;
+  onFramesReady?.();
 }
 
 function setup() {
@@ -94,8 +101,6 @@ function setup() {
   const warp = document.getElementById('bh-warp-map');
   if (!stage || !hero || !finale || !steps || !halvesEl || !actor || !corner || !cornerType || !footSurfer || !trail || !trailInk || !trailG || !krackleG || !speedG || !burst || !fx || !warp) return;
 
-  const base = (stage.dataset.base ?? '/').replace(/\/?$/, '/');
-  void preloadFrames(base);
   const imgs = Array.from(actor.querySelectorAll<HTMLImageElement>('img'));
   const poseFound = actor.querySelector<HTMLElement>('.actor__pose');
   if (!poseFound) return;
@@ -132,15 +137,34 @@ function setup() {
       krackleG.appendChild(c);
       return { el: c, side: r() < 0.5 ? -1 : 1, along: 0.04 + r() * 0.92, off: Math.pow(r(), 1.6), rad: 2 + r() * 9, appear: r() * 0.55, spin: 0.9 + r() * 1.1 };
     });
+    // Comet streaks: tapered white ribbons with an ink edge that trail the board through the flight.
     speedG.innerHTML = '';
-    const lines = Array.from({ length: 6 }, () => {
-      const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      speedG.appendChild(l);
-      return l;
+    const STREAKS = [
+      { off: -0.3, dur: 0.05, width: 0.08 },
+      { off: -0.12, dur: 0.075, width: 0.12 },
+      { off: 0.14, dur: 0.065, width: 0.1 },
+      { off: 0.32, dur: 0.045, width: 0.07 },
+    ];
+    const streaks = STREAKS.map((cfg) => {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      el.setAttribute('fill', '#fff');
+      el.setAttribute('stroke', '#000');
+      el.setAttribute('stroke-width', '2.5');
+      el.setAttribute('stroke-linejoin', 'round');
+      el.style.visibility = 'hidden';
+      speedG.appendChild(el);
+      return { el, ...cfg };
     });
+
+    // Frames: the first one (the logo pose) loads straight away, the rest decode in the background.
+    const first = imgs[0];
+    if (first && !first.getAttribute('src') && first.dataset.src) first.src = first.dataset.src;
+    onFramesReady = () => { lastS = -1; renderSeq(proxy.s); };
+    void preloadFrames(imgs);
 
     let g: Geo | null = null;
     let lastKey = '';
+    let trailNormals: Pt[] = [];
 
     const rel = (el: Element): Box => {
       const sr = stage.getBoundingClientRect(), b = el.getBoundingClientRect();
@@ -180,9 +204,11 @@ function setup() {
       actor!.style.width = `${g.foot.w}px`;
       actor!.style.height = `${g.foot.h}px`;
       fx!.setAttribute('viewBox', `0 0 ${g.W} ${g.H}`);
-      const d = 'M' + g.trail.map((p) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' L');
-      trail!.setAttribute('d', d);
-      trailInk!.setAttribute('d', d);
+      trailNormals = g.trail.map((pt, i) => {
+        const q = g!.trail[Math.min(i + 1, g!.trail.length - 1)], o = g!.trail[Math.max(i - 1, 0)];
+        const dx = q.x - o.x, dy = q.y - o.y, len = Math.hypot(dx, dy) || 1;
+        return { x: dy / len, y: -dx / len };
+      });
       halves.forEach((h) => { h.style.transformOrigin = `${g!.hole.x}px ${g!.hole.y}px`; });
       lastKey = ''; lastS = -1; clipKey = '';
     }
@@ -213,24 +239,32 @@ function setup() {
 
     function poseA(a: number): Pose {
       const { p, s } = pathAt(a);
-      const frame = frameAt(a, FRAMES_A);
-      // Direction of travel (numerical derivative), used for tilt and bank while flying.
-      const q0 = pathAt(Math.max(0, a - 0.002)).p, q1 = pathAt(Math.min(1, a + 0.002)).p;
+      // Direction of travel, used for the bank while flying. Rotation only, never a turn. Measured over a wide
+      // window so the lean rolls smoothly through the turn at the bottom of the swoop instead of flipping.
+      const q0 = pathAt(Math.max(0, a - 0.03)).p, q1 = pathAt(Math.min(1, a + 0.03)).p;
       const vx = q1.x - q0.x, vy = q1.y - q0.y, vl = Math.hypot(vx, vy);
-      const dirX = vl > 1e-4 ? vx / vl : -1, dirY = vl > 1e-4 ? vy / vl : 0;
-      const flyRy = MAX_TILT * -dirX, flyRz = 14 * dirY;
-      let ry: number, rz: number;
-      if (a < 0.12) { ry = 0; rz = 0; }
-      else if (a < 0.2) { ry = 4 * easeInOut(seg(a, 0.12, 0.2)); rz = 0; }
-      else if (a < 0.28) { const t = easeInOut(seg(a, 0.2, 0.28)); ry = lerp(4, 18, t); rz = lerp(0, -6, t); }
-      else if (a < 0.62) { const t = easeInOut(seg(a, 0.28, 0.34)); ry = lerp(18, flyRy, t); rz = lerp(-6, flyRz, t); }
-      else {
-        const endRy = MAX_TILT, t = easeInOut(seg(a, 0.62, 0.9));
-        ry = lerp(endRy, 0, t); rz = lerp(-8, 0, easeInOut(seg(a, 0.62, 0.74)));
+      const dirY = vl > 1e-4 ? vy / vl : 0;
+      const flyRz = 14 * dirY;
+      let rz: number;
+      if (a < 0.2) rz = 0;
+      else if (a < 0.28) rz = lerp(0, -6, easeInOut(seg(a, 0.2, 0.28)));
+      else if (a < 0.62) rz = lerp(-6, flyRz, easeInOut(seg(a, 0.28, 0.34)));
+      else rz = lerp(-8, 0, easeInOut(seg(a, 0.62, 0.74)));
+      return { p, s, rz };
+    }
+
+    // Centre of the board, in stage pixels, for a given pose (the board sits low in the logo box).
+    const boardAt = (pp: Pt, sc: number): Pt => ({ x: pp.x + 0.0025 * g!.foot.w * sc, y: pp.y + 0.2326 * g!.foot.h * sc });
+
+    // A tapered ribbon along a polyline: widths[i] across point i, normals[i] its side direction.
+    function ribbon(pts: Pt[], normals: Pt[], widths: number[]): string {
+      const left: string[] = [], right: string[] = [];
+      for (let i = 0; i < pts.length; i++) {
+        const h = widths[i] / 2, n = normals[i];
+        left.push(`${(pts[i].x + n.x * h).toFixed(1)} ${(pts[i].y + n.y * h).toFixed(1)}`);
+        right.push(`${(pts[i].x - n.x * h).toFixed(1)} ${(pts[i].y - n.y * h).toFixed(1)}`);
       }
-      ry = Math.max(-MAX_TILT, Math.min(MAX_TILT, ry));
-      const sy = 1 - 0.07 * bump(a, 0, 0.025) + 0.05 * bump(a, 0.025, 0.1) - 0.06 * bump(a, 0.1, 0.135) - 0.05 * bump(a, 0.9, 0.96);
-      return { p, s, frame, rz, ry, sy };
+      return `M${left.join(' L')} L${right.reverse().join(' L')} Z`;
     }
 
     function burstAt(c: Pt, R: number, spin: number, opacity: number) {
@@ -268,13 +302,18 @@ function setup() {
       const show = a > 0.001;
       actor!.classList.toggle('is-on', show);
       if (show) {
-        const f = framesReady ? pose.frame : 0;
-        imgs.forEach((im, i) => im.classList.toggle('is-on', i === f));
-        if (num) num.textContent = `F${String(pose.frame).padStart(2, '0')}`;
-        const stand = isStandIn(f);
-        const ry = stand ? pose.ry : 0, sy = stand ? pose.sy : 1, sx = stand ? 2 - pose.sy : 1;
+        // Two neighbouring frames at most: the next one fades in on top, then the current one fades out
+        // underneath, so the figure is never see-through.
+        const [f0, f1, t] = framesReady ? framesAt(a) : [0, 0, 0];
+        const o0 = f0 === f1 ? 1 : Math.min(1, 2 * (1 - t)), o1 = Math.min(1, 2 * t);
+        imgs.forEach((im, i) => {
+          const on = i === f0 || (i === f1 && f1 !== f0 && o1 > 0.002);
+          im.classList.toggle('is-on', on);
+          if (on) { im.style.opacity = (i === f1 && f1 !== f0 ? o1 : o0).toFixed(3); im.style.zIndex = i === f1 && f1 !== f0 ? '2' : '1'; }
+        });
+        if (num) num.textContent = `${f0}${f1 !== f0 ? '>' + f1 : ''}`;
         actor!.style.transform = `translate(${(pose.p.x - G.foot.w / 2).toFixed(2)}px, ${(pose.p.y - G.foot.h / 2).toFixed(2)}px) scale(${pose.s.toFixed(5)})`;
-        poseEl.style.transform = `perspective(1400px) rotateY(${ry.toFixed(2)}deg) rotateZ(${pose.rz.toFixed(2)}deg) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
+        poseEl.style.transform = `rotate(${pose.rz.toFixed(3)}deg)`;
       }
 
       // Contrail = the tear, drawn behind the board during the sweep up
@@ -287,15 +326,30 @@ function setup() {
         reveal = lerp(G.lens[i0], G.lens[Math.min(i0 + 1, G.lens.length - 1)], fr);
         if (a >= 0.62) reveal = lerp(G.lens[G.iCp], total, easeInOut(seg(a, 0.62, 0.645)));
       }
+      // Width: while he flies it is a comet tail, thin at the far end and widest behind the board; as he
+      // reaches the corner it evens out into the straight tear that splits the yellow.
       const w = lerp(Math.max(10, 0.012 * G.W), 0.06 * G.W, easeInOut(seg(a, 0.62, 0.66)));
+      const even = easeInOut(seg(a, 0.6, 0.64));
       const trailO = 1 - seg(a, 0.72, 0.8);
-      [trail!, trailInk!].forEach((pth) => {
-        pth.style.strokeDasharray = `${total} ${total}`;
-        pth.style.strokeDashoffset = `${total - reveal}`;
-      });
       trailG!.style.opacity = reveal > 0 ? trailO.toFixed(3) : '0';
-      trail!.style.strokeWidth = `${w}`;
-      trailInk!.style.strokeWidth = `${w + 6}`;
+      if (reveal > 0) {
+        const headArc = Math.min(reveal, G.lens[G.iCp]), wHead = 0.038 * G.W, wTail = 3;
+        const pts: Pt[] = [], nrm: Pt[] = [], widths: number[] = [];
+        for (let i = 0; i < G.trail.length; i++) {
+          let sArc = G.lens[i], pt = G.trail[i];
+          if (sArc > reveal) {
+            const f = (reveal - G.lens[i - 1]) / ((G.lens[i] - G.lens[i - 1]) || 1);
+            pt = lerpPt(G.trail[i - 1], G.trail[i], f); sArc = reveal;
+          }
+          const taper = sArc <= headArc
+            ? wTail + (wHead - wTail) * Math.pow(sArc / (headArc || 1), 1.1)
+            : wHead * (1 - 0.75 * (sArc - headArc) / ((total - headArc) || 1));
+          pts.push(pt); nrm.push(trailNormals[i]); widths.push(lerp(taper, w, even));
+          if (sArc >= reveal) break;
+        }
+        trail!.setAttribute('d', ribbon(pts, nrm, widths));
+        trailInk!.setAttribute('d', ribbon(pts, nrm, widths.map((x) => x + 6)));
+      }
 
       // Yellow halves and black-hole collapse
       const split = a >= 0.64 && a < 0.82;
@@ -343,19 +397,31 @@ function setup() {
         d.el.setAttribute('r', rad.toFixed(1));
       });
 
-      // Speed lines while flying
+      // Comet streaks while flying: each follows where the board has just been, offset to one side
       if (show && a > 0.29 && a < 0.61) {
-        const q0 = pathAt(Math.max(0, a - 0.004)).p;
-        let vx = pose.p.x - q0.x, vy = pose.p.y - q0.y; const vl = Math.hypot(vx, vy) || 1; vx /= vl; vy /= vl;
-        const size = G.foot.w * pose.s, fade = Math.min(seg(a, 0.29, 0.33), 1 - seg(a, 0.57, 0.61));
-        lines.forEach((l, i) => {
-          const o = (i - 2.5) * 0.16 * size, back = 0.45 * size + (i % 2) * 0.12 * size, len = 0.5 * size + ((i * 37) % 5) * 0.06 * size;
-          const sx0 = pose.p.x - vx * back - vy * o, sy0 = pose.p.y - vy * back + vx * o;
-          l.setAttribute('x1', sx0.toFixed(1)); l.setAttribute('y1', sy0.toFixed(1));
-          l.setAttribute('x2', (sx0 - vx * len).toFixed(1)); l.setAttribute('y2', (sy0 - vy * len).toFixed(1));
-          l.style.visibility = 'visible'; l.style.opacity = fade.toFixed(3);
+        const size = G.foot.w * pose.s, fade = Math.min(seg(a, 0.29, 0.34), 1 - seg(a, 0.55, 0.61));
+        const M = 18;
+        streaks.forEach((st) => {
+          const centres: Pt[] = [];
+          for (let i = 0; i <= M; i++) {
+            const ai = Math.max(0.28, a - st.dur * (0.12 + 0.88 * (i / M)));
+            const q = pathAt(ai);
+            centres.push(boardAt(q.p, q.s));
+          }
+          const nrm = centres.map((c, i) => {
+            const q = centres[Math.max(i - 1, 0)], o = centres[Math.min(i + 1, M)];
+            const dx = q.x - o.x, dy = q.y - o.y, len = Math.hypot(dx, dy);
+            return len > 0.01 ? { x: dy / len, y: -dx / len } : { x: 0, y: -1 };
+          });
+          const pts = centres.map((c, i) => ({ x: c.x + nrm[i].x * st.off * size, y: c.y + nrm[i].y * st.off * size }));
+          const widths = pts.map((_, i) => st.width * size * Math.pow(1 - i / M, 1.4) * Math.min(1, 0.45 + (i / M) * 6));
+          const spread = Math.hypot(pts[0].x - pts[M].x, pts[0].y - pts[M].y);
+          if (spread < 6) { st.el.style.visibility = 'hidden'; return; }
+          st.el.setAttribute('d', ribbon(pts, nrm, widths));
+          st.el.style.visibility = 'visible';
+          st.el.style.opacity = fade.toFixed(3);
         });
-      } else lines.forEach((l) => { l.style.visibility = 'hidden'; });
+      } else streaks.forEach((st) => { st.el.style.visibility = 'hidden'; });
 
       // Landing burst after the hop
       if (a >= 0.1 && a < 0.145) {
@@ -408,6 +474,8 @@ function setup() {
       actor.classList.remove('is-on');
       actor.style.removeProperty('transform');
       poseEl.style.removeProperty('transform');
+      imgs.forEach((im) => { im.classList.remove('is-on'); im.style.removeProperty('opacity'); im.style.removeProperty('z-index'); });
+      onFramesReady = null;
     };
   });
 }
