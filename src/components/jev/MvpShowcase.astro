@@ -1,7 +1,7 @@
 ---
 // The MVP, shown as a live, scaled-down preview of the hosted site inside a browser frame.
 // The preview is non-interactive; clicking anywhere on it opens the full MVP.
-import GlassPill from '../GlassPill.astro';
+import CtaButton from '../CtaButton.astro';
 interface Props { href: string; title: string; repo: string; address: string; }
 const { href, title, repo, address } = Astro.props;
 ---
@@ -15,8 +15,8 @@ const { href, title, repo, address } = Astro.props;
     </span>
   </a>
   <div class="mvp__actions">
-    <GlassPill href={href} label="Open the MVP" size="md" external />
-    <GlassPill href={repo} label="View the code" size="md" external />
+    <CtaButton href={href} label="Open the MVP" tone="dark" external />
+    <CtaButton href={repo} label="View the code" kind="secondary" tone="dark" external />
   </div>
 </div>
 

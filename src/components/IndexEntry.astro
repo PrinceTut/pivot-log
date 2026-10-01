@@ -1,7 +1,7 @@
 ---
 import type { ResearchStat } from '../types';
 import { withBase } from '../utils/url';
-import GlassPill from './GlassPill.astro';
+import CtaButton from './CtaButton.astro';
 import PieceIcon from './PieceIcon.astro';
 
 interface Props {
@@ -32,8 +32,8 @@ const link = withBase(href);
       </dl>
     )}
     <div class="entry__links">
-      <GlassPill href={link} label={linkLabel} size="md" />
-      {extra && <GlassPill href={withBase(extra.href)} label={extra.label} size="md" external />}
+      <CtaButton href={link} label={linkLabel} />
+      {extra && <CtaButton href={withBase(extra.href)} label={extra.label} kind="secondary" external />}
     </div>
   </div>
 </article>

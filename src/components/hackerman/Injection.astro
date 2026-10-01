@@ -1,0 +1,48 @@
+---
+// Direct vs indirect prompt injection: talking the bot into it, or hiding the instruction
+// somewhere it will read later. Examples are the ones in the note.
+---
+
+<figure class="inj viz">
+  <div class="inj__lane">
+    <p class="inj__kind">Prompt injection</p>
+    <div class="inj__flow">
+      <span class="inj__box">You</span>
+      <span class="inj__arrow" aria-hidden="true"></span>
+      <span class="inj__box inj__box--msg">“ignore the above”</span>
+      <span class="inj__arrow" aria-hidden="true"></span>
+      <span class="inj__box inj__box--bot">Chatbot</span>
+    </div>
+    <p class="inj__eg">Remoteli.io · Bing Chat “Sydney”</p>
+  </div>
+  <div class="inj__lane">
+    <p class="inj__kind">Indirect prompt injection</p>
+    <div class="inj__flow">
+      <span class="inj__box">Webpage · document · email</span>
+      <span class="inj__arrow" aria-hidden="true"></span>
+      <span class="inj__box inj__box--msg inj__box--hidden">hidden instruction</span>
+      <span class="inj__arrow" aria-hidden="true"></span>
+      <span class="inj__box inj__box--bot">AI reads it later</span>
+    </div>
+    <p class="inj__eg">White text in papers · EchoLeak</p>
+  </div>
+</figure>
+
+<style>
+  .inj { margin: var(--space-8) 0; display: grid; gap: var(--space-4); }
+  .inj__lane { padding: 16px 18px; background: var(--slab); border-top: var(--rule); }
+  .inj__kind { margin: 0 0 12px !important; font-family: var(--font-mono); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .inj__flow { display: grid; grid-template-columns: 1fr 28px 1.2fr 28px 1fr; align-items: center; }
+  .inj__box { display: grid; place-items: center; min-height: 52px; padding: 8px 10px; text-align: center; border: 2px solid var(--black); background: var(--paper); font-family: var(--font-mono); font-size: 13px; line-height: 1.3; }
+  .inj__box--msg { background: var(--black); color: var(--gold); }
+  .inj__box--hidden { background: var(--paper); color: var(--black); border-style: dashed; }
+  .inj__box--bot { background: var(--gold); }
+  .inj__arrow { position: relative; height: 2px; background: var(--black); }
+  .inj__arrow::after { content: ''; position: absolute; right: -1px; top: -5px; border: 6px solid transparent; border-left: 8px solid var(--black); border-right: 0; }
+  .inj__eg { margin: 10px 0 0 !important; font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
+  @media (max-width: 639px) {
+    .inj__flow { grid-template-columns: 1fr; gap: 0; }
+    .inj__arrow { width: 2px; height: 18px; justify-self: center; }
+    .inj__arrow::after { right: -5px; top: auto; bottom: -1px; border: 6px solid transparent; border-top: 8px solid var(--black); border-bottom: 0; }
+  }
+</style>

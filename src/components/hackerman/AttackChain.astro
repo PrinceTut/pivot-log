@@ -1,0 +1,47 @@
+---
+// The OpenAI hack as the note tells it, one hop at a time, with its three numbers underneath.
+const hops = [
+  { where: 'Community forum', how: 'A flaw in how it handled uploaded images, turned into a server takeover with Claude' },
+  { where: 'OpenAI login', how: 'A weakness in how the forum connected to it' },
+  { where: 'Employees’ ChatGPT and Codex accounts', how: 'Reached through the login' },
+  { where: 'Internal code repository', how: 'One harmless pull request, then they stopped' },
+];
+const numbers = [
+  { v: '< 72 hrs', l: 'start to finish' },
+  { v: '14 hrs', l: 'for OpenAI to fix it' },
+  { v: '$6,500', l: 'bug bounty' },
+];
+---
+
+<figure class="chain viz">
+  <ol class="chain__hops">
+    {hops.map((h) => (
+      <li class="chain__hop">
+        <span class="chain__where">{h.where}</span>
+        <span class="chain__how">{h.how}</span>
+      </li>
+    ))}
+  </ol>
+  <dl class="chain__nums">
+    {numbers.map((n) => (<div><dt>{n.v}</dt><dd>{n.l}</dd></div>))}
+  </dl>
+</figure>
+
+<style>
+  .chain { margin: var(--space-8) 0; padding: var(--space-6); background: var(--black); color: #fff; }
+  .chain__hops { list-style: none; margin: 0; padding: 0 0 0 44px; position: relative; counter-reset: hop; }
+  .chain__hops::before { content: ''; position: absolute; left: 13px; top: 10px; bottom: 10px; width: 2px; background: var(--gold); }
+  .chain__hop { position: relative; counter-increment: hop; display: flex; flex-direction: column; gap: 4px; margin: 0 0 18px; }
+  .chain__hop:last-child { margin-bottom: 0; }
+  .chain__hop::before {
+    content: counter(hop); position: absolute; left: -44px; top: 0; width: 28px; height: 28px;
+    display: grid; place-items: center; background: var(--gold); color: var(--black);
+    font-family: var(--font-mono); font-weight: 700; font-size: 13px;
+  }
+  .chain__where { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; letter-spacing: var(--track-statement); line-height: 1.2; }
+  .chain__how { font-family: var(--font-mono); font-size: 13px; line-height: 1.45; color: #c9cdd2; }
+  .chain__nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: var(--space-6) 0 0; padding-top: var(--space-4); border-top: 2px solid var(--gold); }
+  .chain__nums dt { font-family: var(--font-display); font-weight: 700; font-size: clamp(26px, 3vw, 40px); letter-spacing: var(--track-statement); color: var(--gold); line-height: 1; }
+  .chain__nums dd { margin: 6px 0 0; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  @media (max-width: 639px) { .chain { padding: var(--space-4); } .chain__nums { grid-template-columns: 1fr; } }
+</style>

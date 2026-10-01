@@ -1,0 +1,44 @@
+---
+// The two studies in the note, side by side: Veracode (share of AI-written code with a known flaw)
+// and the Carnegie Mellon benchmark (code that worked vs code that was also secure).
+---
+
+<figure class="cs viz">
+  <div class="cs__grid">
+    <div class="cs__panel">
+      <p class="cs__src">Veracode · 100+ AI models</p>
+      <p class="cs__big">45%</p>
+      <div class="cs__bar" role="img" aria-label="45% of AI-written code had a known security flaw"><span style="--v:45"></span></div>
+      <p class="cs__label">of the code had a known security flaw</p>
+    </div>
+    <div class="cs__panel">
+      <p class="cs__src">Carnegie Mellon benchmark · AI agent</p>
+      <div class="cs__row">
+        <span class="cs__num">61%</span>
+        <div class="cs__bar cs__bar--soft" role="img" aria-label="61% of the code worked"><span style="--v:61"></span></div>
+        <span class="cs__tag">worked</span>
+      </div>
+      <div class="cs__row">
+        <span class="cs__num">10.5%</span>
+        <div class="cs__bar" role="img" aria-label="10.5% of the code was secure"><span style="--v:10.5"></span></div>
+        <span class="cs__tag">secure</span>
+      </div>
+    </div>
+  </div>
+</figure>
+
+<style>
+  .cs { margin: var(--space-8) 0; padding-top: var(--space-4); border-top: var(--rule); }
+  .cs__grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: var(--space-8); }
+  .cs__panel { display: flex; flex-direction: column; gap: 10px; }
+  .cs__src { margin: 0 !important; font-family: var(--font-mono); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .cs__big { margin: 0 !important; font-family: var(--font-display); font-weight: 700; font-size: clamp(56px, 6vw, 88px); line-height: 0.9; letter-spacing: var(--track-display); }
+  .cs__label { margin: 0 !important; font-family: var(--font-mono); font-size: 13px; line-height: 1.4; }
+  .cs__bar { position: relative; height: 22px; box-shadow: inset 0 0 0 2px var(--black); }
+  .cs__bar span { position: absolute; inset: 0 auto 0 0; width: calc(var(--v) * 1%); background: var(--black); }
+  .cs__bar--soft span { background: var(--slab); box-shadow: inset 0 0 0 2px var(--black); }
+  .cs__row { display: grid; grid-template-columns: 4.2rem 1fr 4.5rem; align-items: center; gap: 12px; margin-top: 6px; }
+  .cs__num { font-family: var(--font-display); font-weight: 700; font-size: 1.75rem; letter-spacing: var(--track-statement); }
+  .cs__tag { font-family: var(--font-mono); font-size: 13px; }
+  @media (max-width: 639px) { .cs__grid { grid-template-columns: 1fr; } }
+</style>

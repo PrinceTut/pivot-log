@@ -1,19 +1,24 @@
 ---
-// Solid call-to-action button: used where the site wants a clear "click here now"
-// (the landing page's white section), instead of the decorative glass pill.
-// primary = solid black; secondary = black outline. Both turn gold on hover.
+// Solid call-to-action button, used everywhere except the landing hero (which keeps the glass pills).
+// kind: primary = solid black; secondary = black outline. Both turn gold on hover.
+// size: md (46px) or sm (36px, the top bar). tone: light for light backgrounds, dark for black ones.
+// active marks the section you are in (black with gold text).
 interface Props {
   href: string;
   label: string;
   kind?: 'primary' | 'secondary';
+  size?: 'md' | 'sm';
+  tone?: 'light' | 'dark';
+  active?: boolean;
   external?: boolean;
 }
-const { href, label, kind = 'primary', external = false } = Astro.props;
+const { href, label, kind = 'primary', size = 'md', tone = 'light', active = false, external = false } = Astro.props;
 ---
 
 <a
-  class:list={['cta', `cta--${kind}`]}
+  class:list={['cta', `cta--${kind}`, `cta--${size}`, `cta--${tone}`, { 'cta--active': active }]}
   href={href}
+  aria-current={active ? 'page' : undefined}
   target={external ? '_blank' : undefined}
   rel={external ? 'noopener noreferrer' : undefined}
 >
@@ -28,12 +33,14 @@ const { href, label, kind = 'primary', external = false } = Astro.props;
 
 <style>
   .cta {
+    --fg: var(--black);
+    --bg: var(--black);
     display: inline-flex;
     align-items: center;
     gap: 10px;
     height: 46px;
     padding: 0 20px 0 22px;
-    border: 2px solid var(--black);
+    border: 2px solid var(--bg);
     border-radius: 999px;
     font-family: var(--font-mono);
     font-weight: 700;
@@ -43,13 +50,21 @@ const { href, label, kind = 'primary', external = false } = Astro.props;
     text-decoration: none;
     white-space: nowrap;
   }
-  .cta--primary { background: var(--black); color: #fff; }
-  .cta--secondary { background: transparent; color: var(--black); }
-  .cta:hover { background: var(--gold); color: var(--black); }
-  .cta:focus-visible { outline: 3px solid var(--black); outline-offset: 3px; }
+  .cta--sm { height: 36px; gap: 8px; padding: 0 14px 0 16px; font-size: 12.5px; }
+  .cta--primary { background: var(--bg); color: #fff; }
+  .cta--secondary { background: transparent; color: var(--fg); }
+  /* on black backgrounds the solid button is white and the outline is white */
+  .cta--dark { --fg: #fff; --bg: #fff; }
+  .cta--dark.cta--primary { color: var(--black); }
+  .cta--active { background: var(--black); border-color: var(--black); color: var(--gold); }
+  .cta--dark.cta--active { background: var(--gold); border-color: var(--gold); color: var(--black); }
+  .cta:hover { background: var(--gold); border-color: var(--black); color: var(--black); }
+  .cta--dark:hover { border-color: var(--gold); }
+  .cta:focus-visible { outline: 3px solid var(--fg); outline-offset: 3px; }
   .cta__arrow { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square; }
+  .cta--sm .cta__arrow { width: 13px; height: 13px; }
   @media (prefers-reduced-motion: no-preference) {
-    .cta { transition: background-color var(--transition-fast), color var(--transition-fast); }
+    .cta { transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast); }
     .cta__arrow { transition: transform var(--transition-fast); }
     .cta:hover .cta__arrow { transform: translateX(3px); }
     .cta--secondary:hover .cta__arrow { transform: translate(2px, -2px); }

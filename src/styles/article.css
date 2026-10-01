@@ -193,3 +193,8 @@
   .exercise > li { grid-template-columns: 2.5rem 1fr; padding: 14px; }
   .exercise > li::before { font-size: 1.5rem; }
 }
+
+/* A source link set on its own line in a note */
+.linkcard { padding: 14px 18px; border: 2px solid var(--black); background: var(--paper); font-family: var(--font-mono); font-size: 14px; overflow-wrap: anywhere; }
+.linkcard a { color: var(--black); text-decoration-color: var(--gold); text-decoration-thickness: 3px; text-underline-offset: 4px; }
+.linkcard a:hover { background: var(--gold); }

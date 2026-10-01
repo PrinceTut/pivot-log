@@ -12,6 +12,8 @@
 //   jev-system-one: the router. A task goes into Jev (the filled decision diamond), which
 //     branches to the three Claude tiers; the top lane, Opus, is filled because low
 //     confidence and compliance always route up to it.
+//   hackerman: a chatbot speech bubble with one line filled (the injected instruction), wired down
+//     to the files behind it: the note's point that a fooled chatbot is a way into the system it reads.
 //   market-manipulation: an annual report with a trend line and one line redacted: companies
 //     reshaping their filings so an automated LLM screen picks them up favourably.
 interface Props { slug: string; }
@@ -27,7 +29,8 @@ const agents = slug === 'ultron'
 const isHack = slug === 'end2end-hackerman';
 const isReport = slug === 'market-manipulation';
 const isRouter = slug === 'jev-system-one';
-const known = grid.length > 0 || layers.length > 0 || agents.length > 0 || isHack || isReport || isRouter;
+const isBot = slug === 'hackerman';
+const known = grid.length > 0 || layers.length > 0 || agents.length > 0 || isHack || isReport || isRouter || isBot;
 ---
 
 {known && (
@@ -42,6 +45,16 @@ const known = grid.length > 0 || layers.length > 0 || agents.length > 0 || isHac
           <rect x="37" y="38" width="26" height="17" class="cell on" />
           <rect x="46" y="64" width="8" height="10" class="cell" />
           {[0,1,2,3,4,5].map((i) => <rect x={9 + i * 14} y="80" width="12" height="11" class="cell" />)}
+        </g>
+      )}
+      {isBot && (
+        <g>
+          <path d="M8 6 H92 V56 H34 L20 70 V56 H8 Z" class="cell" />
+          <rect x="18" y="16" width="56" height="6" class="cell" />
+          <rect x="18" y="28" width="64" height="9" class="cell on" />
+          <rect x="18" y="43" width="40" height="6" class="cell" />
+          <path d="M60 56 V74 M24 74 H86 M24 74 V80 M55 74 V80 M86 74 V80" class="line" />
+          <path d="M14 80 H34 V96 H14 Z M45 80 H65 V96 H45 Z M76 80 H96 V96 H76 Z" class="cell" />
         </g>
       )}
       {isRouter && (

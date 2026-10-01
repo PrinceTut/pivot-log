@@ -1,7 +1,7 @@
 ---
 import { withBase } from '../utils/url';
 import { REPO_URL } from '../config';
-import GlassPill from './GlassPill.astro';
+import CtaButton from './CtaButton.astro';
 
 // Inner pages only (the landing hero carries its own logo and pills).
 // theme = the colour of the masthead directly underneath, so the bar blends into it.
@@ -19,9 +19,9 @@ const isScratchnotes = path.includes('/scratchnotes');
     <img class="logo-light" src={withBase('/logo-sm-light.webp')} alt="" width="78" height="56" />
   </a>
   <nav class="nav__pills" aria-label="Main">
-    <GlassPill href={withBase('/projects')} label="Projects" size="sm" active={isProjects} />
-    <GlassPill href={withBase('/scratchnotes')} label="Scratchnotes" size="sm" active={isScratchnotes} />
-    <GlassPill href={REPO_URL} label="Git Repo" size="sm" external />
+    <CtaButton href={withBase('/projects')} label="Projects" size="sm" active={isProjects} />
+    <CtaButton href={withBase('/scratchnotes')} label="Scratchnotes" size="sm" active={isScratchnotes} />
+    <CtaButton href={REPO_URL} label="Git Repo" kind="secondary" size="sm" external />
   </nav>
 </header>
 
@@ -52,16 +52,22 @@ const isScratchnotes = path.includes('/scratchnotes');
   .nav--dark:not(.scrolled) .logo-light { display: block; }
 
   .nav__pills { display: flex; align-items: center; gap: 10px; }
+  /* Over the black masthead (scratchnotes) the buttons flip to white until the bar turns paper on scroll */
+  .nav--dark:not(.scrolled) .nav__pills :global(.cta--primary:not(.cta--active)) { background: #fff; border-color: #fff; color: var(--black); }
+  .nav--dark:not(.scrolled) .nav__pills :global(.cta--secondary) { border-color: #fff; color: #fff; }
+  .nav--dark:not(.scrolled) .nav__pills :global(.cta--active) { background: var(--gold); border-color: var(--gold); color: var(--black); }
+  .nav--dark:not(.scrolled) .nav__pills :global(.cta:hover) { background: var(--gold); border-color: var(--gold); color: var(--black); }
 
   @media (max-width: 639px) {
     .nav { padding: 10px var(--gutter); }
     .nav__logo img { height: 38px; }
     .nav__pills { gap: 5px; }
-    .nav__pills :global(.pill--sm) { --h: 28px; font-size: 14px; padding: 0 9px; }
+    .nav__pills :global(.cta--sm) { height: 30px; padding: 0 10px; font-size: 11px; letter-spacing: 0.03em; }
+    .nav__pills :global(.cta--sm .cta__arrow) { display: none; }
   }
   @media (max-width: 400px) {
     .nav__logo img { height: 32px; }
-    .nav__pills :global(.pill--sm) { --h: 26px; font-size: 12.5px; padding: 0 7px; }
+    .nav__pills :global(.cta--sm) { height: 28px; padding: 0 8px; font-size: 10px; letter-spacing: 0.02em; }
   }
 </style>
 
