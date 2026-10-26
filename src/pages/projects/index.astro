@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import IndexMasthead from '../../components/IndexMasthead.astro';
 import IndexEntry from '../../components/IndexEntry.astro';
+import PipelineCard from '../../components/PipelineCard.astro';
 import type { ResearchMeta } from '../../types';
 
 // Self-updating: every .astro file in this folder with a `meta` export is listed.
@@ -26,12 +27,39 @@ const extras: Record<string, { href: string; label: string }> = {
   'jev-system-one': { href: '/mvp/pivotjev-router/', label: 'Open the MVP' },
 };
 
+// Builds still in progress (text from each project's own chat, approved in chat).
+const pipeline = [
+  {
+    title: 'What Can a Parent Actually Change?',
+    oneLiner: "A causal simulation of which parenting decisions actually change a child's adult earnings.",
+    description: "I'm modelling which decisions a parent actually controls, from planning a child through high school, and whether any of them change the child's adult earnings. It started with Gladwell's Outliers. I wanted to flip his method: use only studies with as-if-random variation, put a cost on every lever, and publish whatever comes out, even if most levers barely matter.",
+    buildingWith: ['Python', 'randomised trials and natural experiments', 'an evidence ledger', 'Claude'],
+    comesOut: 'A paper, the simulation model, the evidence ledger as a dataset, and an interactive results explorer',
+    icon: 'levers' as const,
+  },
+  {
+    title: 'Pivot-ACM',
+    oneLiner: "Matching each LLM task to a model that's good enough and costs less.",
+    description: "I'm building a system that sends each LLM task to a cheaper model whenever that model can still do the job well. I started it because teams pay for expensive models on work a smaller one handles fine, like reading long documents. To test it properly, I built a 280-task benchmark, partly from real SEC filings and contracts.",
+    buildingWith: ['Python', 'Claude Haiku, Sonnet and Opus', 'ModernBERT', 'SEC filings and CUAD contracts'],
+    comesOut: 'A benchmark dataset and a router model',
+    icon: 'scale' as const,
+  },
+];
+
 // Intro copy as approved in chat (restored; an earlier zip had overwritten it).
 const intro = "These are exercises I've done to build and break down systems, to understand the mechanisms behind building models, pipelines, and agents. Every piece here is something built out of curiosity.";
 ---
 
 <BaseLayout title="Projects" description={intro} nav="gold">
   <IndexMasthead theme="gold" title="Projects" rows={[['*', 'PROJECTS']]} align="start" intro={intro} count={pieces.length} countLabel={pieces.length === 1 ? 'Build' : 'Builds'} />
+
+  <section class="pipeline" aria-labelledby="pipeline-title">
+    <h2 class="pipeline__title" id="pipeline-title">In the pipeline</h2>
+    <div class="pipeline__grid">
+      {pipeline.map((p) => <PipelineCard {...p} />)}
+    </div>
+  </section>
 
   <section class="list" aria-label="Builds">
     {pieces.map((piece, i) => (
@@ -51,6 +79,9 @@ const intro = "These are exercises I've done to build and break down systems, to
 
 <style>
   .list { padding: var(--space-16) var(--gutter) 0; max-width: 1500px; margin: 0 auto; }
+  .pipeline { padding: var(--space-12) var(--gutter) 0; max-width: 1500px; margin: 0 auto; }
+  .pipeline__title { margin: 0 0 28px; font-family: var(--font-mono); font-weight: 700; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .pipeline__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr)); gap: 32px var(--space-6); }
   @media (max-width: 639px) { .list { padding-top: var(--space-8); } }
 </style>
 
